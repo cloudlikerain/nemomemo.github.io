@@ -1044,13 +1044,13 @@ body {
   gap: 2px;
 }
 
-/* 한 줄 = 1시간 (05, 06, ..., 04) */
+/* 한 줄 = 1시간 */
 .timetable-row {
   display: grid;
-  grid-template-columns: 32px 1fr; /* 왼쪽 시간 라벨 / 오른쪽 12칸 */
-  align-items: center;
+  grid-template-columns: 32px 1fr;
+  align-items: stretch;  /* 🔹 높이 맞추기 */
   column-gap: 4px;
-  height: 18px; /* 한 줄 높이: 제목 한 줄 정도 */
+  height: 18px;         /* 제목 1줄 정도 */
 }
 
 .timetable-row-label {
@@ -1061,28 +1061,30 @@ body {
   box-sizing: border-box;
 }
 
-/* 오른쪽: 5분×12칸 그리드 */
+/* 오른쪽: 12칸 그리드 */
 .timetable-row-grid {
   display: grid;
-  grid-template-columns: repeat(12, 1fr); /* 60분 / 5분 = 12칸 */
+  grid-template-columns: repeat(12, 1fr);
   column-gap: 1px;
-  position: relative;
   height: 100%;
+  align-items: stretch;   /* 🔹 안의 요소들이 줄 높이에 맞게 늘어나도록 */
+  position: relative;
 }
 
-/* 빈 칸(ㅇ) */
+/* 빈 회색 칸(ㅇ) */
 .timetable-cell {
-  background-color: #f9fafb;
-  border-radius: 2px;
+  height: 100%;
+  background-color: #e5e7eb;  /* 🔹 모든 빈 영역은 이 회색 */
+  border-radius: 3px;
 }
 
-/* 채워진 구간(ㅁ들) : 블록이 여러 칸을 가로로 span */
+/* 채워진 구간(ㅁㅁㅁ...) */
 .timetable-block {
-  position: relative;
-  height: 100%;
-  border-radius: 4px;
+  height: 100%;              /* 🔹 회색 칸 높이와 동일하게 */
+  border-radius: 3px;
   font-size: 9px;
   padding: 0 3px;
+  margin: 0;                 /* 🔹 여백 없애기 */
   display: flex;
   align-items: center;
   white-space: nowrap;

@@ -22,6 +22,27 @@ document.addEventListener("DOMContentLoaded", () => {
     return `${y}년 ${Number(m)}월 ${Number(d)}일`;
   }
 
+  // "HH:MM" → 가장 가까운 5분 단위로 스냅해서 "HH:MM" 반환
+  function snapTimeTo5Minutes(timeStr) {
+    const [h, m] = timeStr.split(":").map(Number);
+    if (isNaN(h) || isNaN(m)) return timeStr;
+
+    let total = h * 60 + m;
+    // 5분 단위로 반올림
+    let snapped = Math.round(total / 5) * 5;
+
+    // 범위 보정 (00:00 ~ 23:55)
+    if (snapped < 0) snapped = 0;
+    const maxMinutes = 23 * 60 + 55;
+    if (snapped > maxMinutes) snapped = maxMinutes;
+
+    const hh = Math.floor(snapped / 60);
+    const mm = snapped % 60;
+
+    return `${String(hh).padStart(2, "0")}:${String(mm).padStart(2, "0")}`;
+  }
+
+
   const TODAY = formatDateToYMD(new Date());
 
   // 이벤트 색상 팔레트 (인덱스로만 저장)
@@ -1005,12 +1026,16 @@ document.addEventListener("DOMContentLoaded", () => {
         (endDayMin - 1 - DAY_START_HOUR * 60) / 60
       );
 
+      let isFirstSegment = true; // 🔹 첫 구간인지 여부
+
       for (
         let hourIndex = firstHourIndex;
         hourIndex <= lastHourIndex;
         hourIndex++
       ) {
-        const rowIndex = ((hourIndex % DAY_TOTAL_HOURS) + DAY_TOTAL_HOURS) % DAY_TOTAL_HOURS;
+        const rowIndex =
+          ((hourIndex % DAY_TOTAL_HOURS) + DAY_TOTAL_HOURS) %
+          DAY_TOTAL_HOURS;
         const rowGrid = rows[rowIndex];
         if (!rowGrid) continue;
 
@@ -1021,7 +1046,6 @@ document.addEventListener("DOMContentLoaded", () => {
         const sliceEnd = Math.min(endDayMin, rowEndMin);
         if (sliceEnd <= sliceStart) continue;
 
-        // 이 시간 줄 안에서의 5분 칸 인덱스 (0~11)
         const startOffsetMin = sliceStart - rowStartMin;
         const endOffsetMin = sliceEnd - rowStartMin;
 
@@ -1030,10 +1054,15 @@ document.addEventListener("DOMContentLoaded", () => {
 
         const blockEl = document.createElement("div");
         blockEl.className = "timetable-block";
-        blockEl.textContent = block.title;
 
-        // 예: 13:15~13:45 → startSlot=3, endSlot=9
-        // grid-column: 4 / 10 → ㅇㅇㅇㅁㅁㅁㅁㅁㅁㅇㅇㅇ
+        // 🔹 제목은 첫 번째 줄에만 표시
+        if (isFirstSegment) {
+          blockEl.textContent = block.title;
+          isFirstSegment = false;
+        } else {
+          blockEl.textContent = "";
+        }
+
         blockEl.style.gridColumn = `${startSlot + 1} / ${endSlot + 1}`;
         blockEl.style.borderColor = borderColor;
         blockEl.style.backgroundColor = bgColor;
@@ -1048,6 +1077,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
         rowGrid.appendChild(blockEl);
       }
+
     });
 
     renderTimeblockList(todaysBlocks);
@@ -1234,11 +1264,21 @@ document.addEventListener("DOMContentLoaded", () => {
   if (sheetForm) {
     sheetForm.addEventListener("submit", (e) => {
       e.preventDefault();
-      const mode = sheetModeInput.value; // "event" | "edit-event" | "timeblock"
+      const mode = sheetModeInput.value;
       const title = sheetTitleInput.value.trim();
       const date = sheetDateInput.value || TODAY;
-      const start = sheetStartInput.value;
-      const end = sheetEndInput.value;
+
+      const rawStart = sheetStartInput.value;
+      const rawEnd = sheetEndInput.value;
+
+      // 🔹 5분 단위로 스냅
+      const start = snapTimeTo5Minutes(rawStart);
+      const end = snapTimeTo5Minutes(rawEnd);
+
+      // 인풋에도 보정된 값 다시 써주기 (사용자 눈에도 정리된 상태로 보이게)
+      sheetStartInput.value = start;
+      sheetEndInput.value = end;
+
       const memo = sheetMemoInput ? sheetMemoInput.value.trim() : "";
 
       if (!title || !date || !start || !end) {
@@ -1299,7 +1339,6 @@ document.addEventListener("DOMContentLoaded", () => {
         setSelectedDate(date);
         alert("일정이 수정되었습니다.");
       } else if (mode === "timeblock") {
-        // 기존 타임블록 생성 로직 그대로
         const block = {
           id: getNextTimeBlockId(),
           date,
@@ -1307,6 +1346,7 @@ document.addEventListener("DOMContentLoaded", () => {
           end,
           title,
           sourceEventId: null,
+          colorIndex, // ✅ 타임블록도 색 인덱스를 가진다
         };
         timeBlocks.push(block);
         saveTimeBlocksToStorage();
