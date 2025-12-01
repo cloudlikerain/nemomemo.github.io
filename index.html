@@ -1,0 +1,705 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>nemomemo</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div class="app">
+
+    <!-- 상단 공통 헤더 -->
+    <header class="app-header">
+      <button class="app-header__menu-button" type="button" aria-label="메뉴 열기">
+        ☰
+      </button>
+
+      <div class="app-header__title-group">
+        <h1 class="app-title">nemomemo</h1>
+        <p class="app-subtitle">네모 메모 플래너</p>
+      </div>
+
+      <div class="app-header__controls">
+        <button class="btn btn-text btn-today" type="button">
+          오늘
+        </button>
+
+      </div>
+    </header>
+
+    <!-- 메인 영역: 여러 화면(screen)을 담는 컨테이너 -->
+    <main class="app-main">
+
+      <!-- ──────────────────────── -->
+      <!-- 화면 1: 달력 (월간/주간) -->
+      <!-- ──────────────────────── -->
+      <section
+        class="screen screen--calendar"
+        aria-label="달력 화면"
+        data-screen="calendar"
+        data-active="true"
+      >
+
+        <!-- 월간/주간 달력 섹션 -->
+        <section class="calendar-section" aria-label="월간 달력">
+          <header class="calendar-header">
+            <button
+              class="calendar-header__nav-button calendar-header__nav-button--prev"
+              type="button"
+              aria-label="이전 달"
+            >
+              ‹
+            </button>
+
+            <div class="calendar-header__current-month" aria-live="polite">
+              2025년 12월
+            </div>
+
+            <button
+              class="calendar-header__nav-button calendar-header__nav-button--next"
+              type="button"
+              aria-label="다음 달"
+            >
+              ›
+            </button>
+            <div class="calendar-header__view-toggle">
+              <button
+                type="button"
+                class="calendar-header__view-button calendar-header__view-button--active"
+                data-view="month"
+              >
+                월
+              </button>
+              <button
+                type="button"
+                class="calendar-header__view-button"
+                data-view="week"
+              >
+                주
+              </button>
+            </div>
+          </header>
+
+          <!-- 요일 헤더 -->
+          <div class="calendar-weekdays" aria-hidden="true">
+            <div class="calendar-weekday">월</div>
+            <div class="calendar-weekday">화</div>
+            <div class="calendar-weekday">수</div>
+            <div class="calendar-weekday">목</div>
+            <div class="calendar-weekday">금</div>
+            <div class="calendar-weekday">토</div>
+            <div class="calendar-weekday">일</div>
+          </div>
+
+          <!-- 월간 달력 그리드 -->
+          <div class="calendar-grid calendar-grid--month">
+            <!-- 날짜 버튼들은 JS로 생성할 것 -->
+          </div>
+        </section>
+
+        <!-- 선택된 날짜의 일정 리스트 섹션 -->
+        <section class="day-detail" aria-label="선택된 날짜의 일정">
+          <header class="day-detail__header">
+            <div class="day-detail__date-label">
+              2025년 12월 1일 월요일
+            </div>
+
+            <button
+              class="day-detail__add-button"
+              type="button"
+              data-action="open-event-form"
+            >
+              + 새 일정
+            </button>
+          </header>
+
+          <!-- 일정 리스트 -->
+          <ul class="event-list">
+            <!-- 일정 아이템 예시 -->
+            <li class="event-list__item" data-event-id="event-1">
+              <button class="event-list__button" type="button">
+                <div class="event-list__time">
+                  <span class="event-list__time-start">10:00</span>
+                  <span class="event-list__time-separator">–</span>
+                  <span class="event-list__time-end">11:00</span>
+                </div>
+                <div class="event-list__content">
+                  <div class="event-list__title">HCI 과제</div>
+                  <div class="event-list__meta">
+                    <span class="event-list__meta-item event-list__meta-item--repeat">
+                      단발성
+                    </span>
+                  </div>
+                </div>
+              </button>
+            </li>
+
+            <li class="event-list__item" data-event-id="event-2">
+              <button class="event-list__button" type="button">
+                <div class="event-list__time">
+                  <span class="event-list__time-start">14:00</span>
+                  <span class="event-list__time-separator">–</span>
+                  <span class="event-list__time-end">16:00</span>
+                </div>
+                <div class="event-list__content">
+                  <div class="event-list__title">서글서글 회의</div>
+                  <div class="event-list__meta">
+                    <span class="event-list__meta-item event-list__meta-item--repeat">
+                      매주 수요일
+                    </span>
+                  </div>
+                </div>
+              </button>
+            </li>
+
+            <!-- 실제 데이터는 JS로 동적으로 채울 예정 -->
+          </ul>
+        </section>
+
+        <!-- 플로팅 액션 버튼 (새 일정 추가) -->
+        <button
+          class="fab fab--add-event"
+          type="button"
+          aria-label="새 일정 추가"
+          data-action="open-event-form"
+        >
+          +
+        </button>
+      </section>
+
+      <!-- ──────────────────────── -->
+      <!-- 화면 2: 하루 타임테이블 -->
+      <!-- ──────────────────────── -->
+      <section
+        class="screen screen--day"
+        aria-label="하루 타임테이블 화면"
+        data-screen="day"
+        data-active="false"
+      >
+        <!-- 상단: 날짜 & 액션들 -->
+        <header class="day-screen-header">
+          <div class="day-screen-header__top-row">
+            <h2 class="day-screen-title">오늘 타임테이블</h2>
+            <button
+              class="day-screen-date-button"
+              type="button"
+              aria-label="날짜 선택"
+            >
+              <span class="day-screen-date-label">2025년 12월 1일</span>
+              <span class="day-screen-date-chevron">▼</span>
+            </button>
+          </div>
+
+          <div class="day-screen-header__actions">
+            <button
+              class="btn btn-outline btn-import-events"
+              type="button"
+              data-action="import-from-calendar"
+            >
+              달력 일정 불러오기
+            </button>
+            <button
+              class="btn btn-outline"
+              type="button"
+              data-action="open-timeblock-sheet"
+            >
+              새 블록 추가
+            </button>
+            <button
+              class="btn btn-text btn-clear-timeline"
+              type="button"
+              data-action="clear-timeline"
+            >
+              초기화
+            </button>
+          </div>
+        </header>
+
+        <!-- 중간: 세로 타임라인 -->
+        <section
+          class="timeline"
+          aria-label="시간별 계획"
+        >
+          <!-- 06:00 ~ 23:00까지 시간 줄 미리 생성 -->
+          <div class="timeline__hour-row" data-time="06:00">
+            <div class="timeline__hour-label">06:00</div>
+            <div class="timeline__blocks"></div>
+          </div>
+
+          <div class="timeline__hour-row" data-time="07:00">
+            <div class="timeline__hour-label">07:00</div>
+            <div class="timeline__blocks"></div>
+          </div>
+
+          <div class="timeline__hour-row" data-time="08:00">
+            <div class="timeline__hour-label">08:00</div>
+            <div class="timeline__blocks"></div>
+          </div>
+
+          <div class="timeline__hour-row" data-time="09:00">
+            <div class="timeline__hour-label">09:00</div>
+            <div class="timeline__blocks"></div>
+          </div>
+
+          <div class="timeline__hour-row" data-time="10:00">
+            <div class="timeline__hour-label">10:00</div>
+            <div class="timeline__blocks"></div>
+          </div>
+
+          <div class="timeline__hour-row" data-time="11:00">
+            <div class="timeline__hour-label">11:00</div>
+            <div class="timeline__blocks"></div>
+          </div>
+
+          <div class="timeline__hour-row" data-time="12:00">
+            <div class="timeline__hour-label">12:00</div>
+            <div class="timeline__blocks"></div>
+          </div>
+
+          <div class="timeline__hour-row" data-time="13:00">
+            <div class="timeline__hour-label">13:00</div>
+            <div class="timeline__blocks"></div>
+          </div>
+
+          <div class="timeline__hour-row" data-time="14:00">
+            <div class="timeline__hour-label">14:00</div>
+            <div class="timeline__blocks"></div>
+          </div>
+
+          <div class="timeline__hour-row" data-time="15:00">
+            <div class="timeline__hour-label">15:00</div>
+            <div class="timeline__blocks"></div>
+          </div>
+
+          <div class="timeline__hour-row" data-time="16:00">
+            <div class="timeline__hour-label">16:00</div>
+            <div class="timeline__blocks"></div>
+          </div>
+
+          <div class="timeline__hour-row" data-time="17:00">
+            <div class="timeline__hour-label">17:00</div>
+            <div class="timeline__blocks"></div>
+          </div>
+
+          <div class="timeline__hour-row" data-time="18:00">
+            <div class="timeline__hour-label">18:00</div>
+            <div class="timeline__blocks"></div>
+          </div>
+
+          <div class="timeline__hour-row" data-time="19:00">
+            <div class="timeline__hour-label">19:00</div>
+            <div class="timeline__blocks"></div>
+          </div>
+
+          <div class="timeline__hour-row" data-time="20:00">
+            <div class="timeline__hour-label">20:00</div>
+            <div class="timeline__blocks"></div>
+          </div>
+
+          <div class="timeline__hour-row" data-time="21:00">
+            <div class="timeline__hour-label">21:00</div>
+            <div class="timeline__blocks"></div>
+          </div>
+
+          <div class="timeline__hour-row" data-time="22:00">
+            <div class="timeline__hour-label">22:00</div>
+            <div class="timeline__blocks"></div>
+          </div>
+
+          <div class="timeline__hour-row" data-time="23:00">
+            <div class="timeline__hour-label">23:00</div>
+            <div class="timeline__blocks"></div>
+          </div>
+        </section>
+
+
+        <!-- 하단: 선택된 블록 상세 정보 -->
+        <section
+          class="time-block-detail"
+          aria-label="선택된 블록 상세"
+        >
+          <!-- 아무 블록도 선택 안 됐을 때 메시지 -->
+          <div class="time-block-detail__empty" data-state="empty">
+            아직 선택된 블록이 없어요.
+            타임라인을 눌러서 블록을 추가하거나 선택해보세요.
+          </div>
+
+          <!-- 블록이 선택되었을 때 보이는 영역 (초기에는 hidden 처리 예정) -->
+          <div class="time-block-detail__content" data-state="selected" hidden>
+            <header class="time-block-detail__header">
+              <h3 class="time-block-detail__title">
+                서글서글 회의
+              </h3>
+              <span class="time-block-detail__time-range">
+                14:00 ~ 16:00
+              </span>
+            </header>
+
+            <div class="time-block-detail__fields">
+              <!-- 나중에 인풋/텍스트에디트로 바꿀 수 있음 -->
+              <div class="time-block-detail__field">
+                <span class="time-block-detail__label">메모</span>
+                <p class="time-block-detail__value">
+                  회의 안건 정리하기
+                </p>
+              </div>
+            </div>
+
+            <div class="time-block-detail__actions">
+              <button
+                class="btn btn-outline"
+                type="button"
+                data-action="duplicate-block"
+              >
+                복제
+              </button>
+              <button
+                class="btn btn-outline"
+                type="button"
+                data-action="change-color"
+              >
+                색 변경
+              </button>
+              <button
+                class="btn btn-danger"
+                type="button"
+                data-action="delete-block"
+              >
+                삭제
+              </button>
+            </div>
+          </div>
+        </section>
+
+        <!-- (선택) 나중에 "이미지로 저장" 버튼도 여기 하단에 둘 수 있음 -->
+        <!--
+        <button
+          class="btn btn-primary btn-export-image"
+          type="button"
+          data-action="export-timetable-image"
+        >
+          이미지로 저장하기
+        </button>
+        -->
+      </section>
+
+      <!-- ──────────────────────── -->
+      <!-- 화면 3: 투두 리스트 -->
+      <!-- ──────────────────────── -->
+      <section
+        class="screen screen--todo"
+        aria-label="투두 리스트 화면"
+        data-screen="todo"
+        data-active="false"
+      >
+        <!-- 상단: 제목 + 날짜 + 불러오기 버튼들 -->
+        <header class="todo-header">
+          <div class="todo-header__top-row">
+            <h2 class="todo-title">오늘 할 일</h2>
+            <button
+              class="todo-date-button"
+              type="button"
+              aria-label="날짜 선택"
+            >
+              <span class="todo-date-label">2025년 12월 1일</span>
+              <span class="todo-date-chevron">▼</span>
+            </button>
+          </div>
+
+          <div class="todo-header__actions">
+            <button
+              class="btn btn-outline"
+              type="button"
+              data-action="import-todo-from-calendar"
+            >
+              달력에서 불러오기
+            </button>
+            <button
+              class="btn btn-outline"
+              type="button"
+              data-action="import-todo-from-timeline"
+            >
+              타임테이블에서 불러오기
+            </button>
+          </div>
+        </header>
+
+        <!-- (선택) 필터/정렬 영역: 구조만 잡아두기 -->
+        <section class="todo-filters" aria-label="투두 필터">
+          <div class="todo-filters__row">
+            <button
+              class="todo-filter todo-filter--active"
+              type="button"
+              data-filter="today"
+            >
+              오늘
+            </button>
+            <button class="todo-filter" type="button" data-filter="all">
+              전체
+            </button>
+          </div>
+        </section>
+
+        <!-- 투두 리스트 -->
+        <section class="todo-section" aria-label="할 일 목록">
+          <ul class="todo-list">
+            <!-- JS로 아이템들이 추가될 예정 -->
+            <!-- 예시 아이템 하나 (초기 표시용) -->
+            <li class="todo-item" data-todo-id="example-1" data-done="false">
+              <label class="todo-item__main">
+                <input
+                  class="todo-item__checkbox"
+                  type="checkbox"
+                  aria-label="HCI 과제 마무리"
+                />
+                <span class="todo-item__title">
+                  HCI 과제 마무리
+                </span>
+              </label>
+              <div class="todo-item__meta">
+                <span class="todo-item__tag todo-item__tag--source">
+                  캘린더
+                </span>
+                <button
+                  class="todo-item__delete-button"
+                  type="button"
+                  aria-label="할 일 삭제"
+                >
+                  삭제
+                </button>
+              </div>
+            </li>
+          </ul>
+
+    </main>
+
+    <!-- 하단 탭바 (공통 내비게이션) -->
+    <nav class="bottom-nav" aria-label="주요 화면 이동">
+      <button
+        class="bottom-nav__item bottom-nav__item--active"
+        type="button"
+        data-screen-target="calendar"
+        aria-label="달력 보기"
+        aria-current="page"
+      >
+        <span class="bottom-nav__icon">📅</span>
+        <span class="bottom-nav__label">달력</span>
+      </button>
+
+      <button
+        class="bottom-nav__item"
+        type="button"
+        data-screen-target="day"
+        aria-label="하루 타임테이블 보기"
+      >
+        <span class="bottom-nav__icon">⏰</span>
+        <span class="bottom-nav__label">하루</span>
+      </button>
+
+      <button
+        class="bottom-nav__item"
+        type="button"
+        data-screen-target="todo"
+        aria-label="투두 리스트 보기"
+      >
+        <span class="bottom-nav__icon">✅</span>
+        <span class="bottom-nav__label">투두</span>
+      </button>
+    </nav>
+  </div>
+
+  <!-- 바텀시트: 일정/타임블록 공용 입력 폼 -->
+  <div class="bottom-sheet" aria-hidden="true">
+    <div class="bottom-sheet__overlay"></div>
+
+    <div class="bottom-sheet__panel" role="dialog" aria-modal="true">
+      <header class="bottom-sheet__header">
+        <h2 class="bottom-sheet__title">새 일정 추가</h2>
+        <button
+          type="button"
+          class="bottom-sheet__close"
+          aria-label="닫기"
+        >
+          ✕
+        </button>
+      </header>
+
+      <form class="bottom-sheet__form">
+        <!-- 모드: event / timeblock / edit-event -->
+        <input
+          type="hidden"
+          class="bottom-sheet__mode"
+          value="event"
+        />
+
+        <!-- 색상 index 저장용 -->
+        <input
+          type="hidden"
+          class="bottom-sheet__color-index"
+          value="0"
+        />
+
+        <!-- ✅ 편집 대상 일정의 id 저장용 -->
+        <input
+          type="hidden"
+          class="bottom-sheet__event-id"
+          value=""
+        />
+        <div class="bottom-sheet__field">
+          <label class="bottom-sheet__label">
+            제목
+            <input
+              type="text"
+              class="bottom-sheet__input bottom-sheet__input--title"
+              placeholder="무슨 일정인가요?"
+              required
+            />
+          </label>
+        </div>
+
+        <div class="bottom-sheet__field">
+          <label class="bottom-sheet__label">
+            날짜
+            <input
+              type="date"
+              class="bottom-sheet__input bottom-sheet__input--date"
+              required
+            />
+          </label>
+        </div>
+
+        <div class="bottom-sheet__row">
+          <div class="bottom-sheet__field">
+            <label class="bottom-sheet__label">
+              시작 시간
+              <input
+                type="time"
+                class="bottom-sheet__input bottom-sheet__input--start"
+                required
+              />
+            </label>
+          </div>
+          <div class="bottom-sheet__field">
+            <label class="bottom-sheet__label">
+              종료 시간
+              <input
+                type="time"
+                class="bottom-sheet__input bottom-sheet__input--end"
+                required
+              />
+            </label>
+          </div>
+        </div>
+
+        <!-- 🔵 색상 선택 영역 -->
+        <div class="bottom-sheet__field bottom-sheet__field--colors">
+          <span class="bottom-sheet__label">색상</span>
+          <div class="bottom-sheet__colors">
+            <button
+              type="button"
+              class="bottom-sheet__color-option bottom-sheet__color-option--selected"
+              data-color-index="0"
+              aria-label="색상 1"
+            ></button>
+            <button
+              type="button"
+              class="bottom-sheet__color-option"
+              data-color-index="1"
+              aria-label="색상 2"
+            ></button>
+            <button
+              type="button"
+              class="bottom-sheet__color-option"
+              data-color-index="2"
+              aria-label="색상 3"
+            ></button>
+            <button
+              type="button"
+              class="bottom-sheet__color-option"
+              data-color-index="3"
+              aria-label="색상 4"
+            ></button>
+            <button
+              type="button"
+              class="bottom-sheet__color-option"
+              data-color-index="4"
+              aria-label="색상 5"
+            ></button>
+            <button
+              type="button"
+              class="bottom-sheet__color-option"
+              data-color-index="5"
+              aria-label="색상 6"
+            ></button>
+            <button
+              type="button"
+              class="bottom-sheet__color-option"
+              data-color-index="6"
+              aria-label="색상 7"
+            ></button>
+            <button
+              type="button"
+              class="bottom-sheet__color-option"
+              data-color-index="7"
+              aria-label="색상 8"
+            ></button>
+            <button
+              type="button"
+              class="bottom-sheet__color-option"
+              data-color-index="8"
+              aria-label="색상 9"
+            ></button>
+            <button
+              type="button"
+              class="bottom-sheet__color-option"
+              data-color-index="9"
+              aria-label="색상 10"
+            ></button>
+          </div>
+        </div>
+        <!-- 메모 -->
+        <div class="bottom-sheet__field">
+          <label class="bottom-sheet__label">
+            메모
+            <textarea
+              class="bottom-sheet__textarea bottom-sheet__input--memo"
+              placeholder="메모를 자유롭게 적어보세요"
+              rows="2"
+            ></textarea>
+          </label>
+        </div>
+        <footer class="bottom-sheet__footer">
+          <button
+            type="button"
+            class="bottom-sheet__button bottom-sheet__button--secondary"
+            data-sheet-action="cancel"
+          >
+            취소
+          </button>
+          <!-- ✅ 일정 편집 모드일 때만 보이는 삭제 버튼 -->
+          <button
+            type="button"
+            class="bottom-sheet__button bottom-sheet__button--danger"
+            data-sheet-action="delete-event"
+            style="display: none;"
+          >
+            삭제
+          </button>
+          <button
+            type="submit"
+            class="bottom-sheet__button bottom-sheet__button--primary"
+          >
+            저장
+          </button>
+        </footer>
+      </form>
+    </div>
+  </div>
+
+  <!-- 나중에 JS로 SPA 로직 / 로컬 저장 붙이기 -->
+  <script src="app.js"></script>
+
+</body>
+
+</html>

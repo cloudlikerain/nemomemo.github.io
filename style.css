@@ -1,0 +1,973 @@
+/* 기본 리셋 & 베이스 스타일 */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+}
+
+body {
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
+    sans-serif;
+  font-size: 14px;
+  line-height: 1.4;
+  color: #222;
+  background-color: #f5f5f5;
+}
+
+/* 앱 전체 레이아웃: 상단 헤더 + 콘텐츠 + 하단 탭바 */
+.app {
+  min-height: 100vh;
+  max-width: 480px; /* 모바일 기준, 너무 넓어지지 않게 */
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  background-color: #fff;
+  border-left: 1px solid #ddd;
+  border-right: 1px solid #ddd;
+}
+
+/* 상단 헤더 고정 */
+.app-header {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  padding: 8px 12px;
+  gap: 8px;
+  background-color: #fff;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+.app-header__menu-button {
+  border: none;
+  background: none;
+  font-size: 18px;
+  padding: 4px;
+}
+
+.app-header__title-group {
+  flex: 1;
+}
+
+.app-title {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.app-subtitle {
+  margin: 0;
+  font-size: 11px;
+  color: #777;
+}
+
+.app-header__controls {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 4px;
+}
+
+.btn {
+  border-radius: 999px;
+  font-size: 12px;
+  padding: 4px 10px;
+  border: 1px solid #ccc;
+  background-color: #fafafa;
+}
+
+/* 텍스트 버튼 스타일 */
+.btn-text {
+  border: none;
+  background: none;
+  padding: 4px 6px;
+  font-size: 12px;
+  color: #007aff;
+}
+
+/* 월/주 토글 */
+.view-toggle {
+  display: inline-flex;
+  border-radius: 999px;
+  padding: 2px;
+  background-color: #f0f0f0;
+}
+
+.view-toggle__button {
+  border: none;
+  background: none;
+  font-size: 11px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  color: #555;
+}
+
+.view-toggle__button--active {
+  background-color: #fff;
+  box-shadow: 0 0 0 1px #ddd;
+  color: #000;
+}
+
+/* 메인 영역: 헤더 아래, 탭바 위 스크롤 */
+.app-main {
+  flex: 1;
+  overflow-y: auto;
+  padding: 8px 8px 60px; /* 아래에 탭바 공간 확보 */
+}
+
+/* 각 화면 공통 */
+.screen {
+  /* SPA 전환 시를 대비한 hook */
+}
+
+.screen[data-active="false"] {
+  display: none; /* JS 붙으면 자동 전환에 사용 예정 */
+}
+
+/* ───────────────────── */
+/* 화면 1: 달력 레이아웃 */
+/* ───────────────────── */
+
+.calendar-section {
+  border: 1px solid #eee;
+  border-radius: 8px;
+  padding: 8px;
+  margin-bottom: 12px;
+  background-color: #fafafa;
+}
+
+/* 달력 헤더 (월/네비) */
+.calendar-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+  gap: 8px;
+}
+
+.calendar-header__nav-button {
+  border: none;
+  background: none;
+  font-size: 18px;
+  padding: 0 6px;
+}
+
+.calendar-header__current-month {
+  font-size: 14px;
+  font-weight: 600;
+}
+
+/* 가운데: 월/이전/다음 */
+.calendar-header__center {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+/* 오른쪽: 월/주 토글 */
+.calendar-header__view-toggle {
+  display: inline-flex;
+  border-radius: 999px;
+  background-color: #f3f4f6;
+  padding: 2px;
+}
+
+.calendar-header__view-button {
+  border: none;
+  background: transparent;
+  padding: 4px 8px;
+  font-size: 12px;
+  border-radius: 999px;
+  color: #6b7280;
+}
+
+.calendar-header__view-button--active {
+  background-color: #fff;
+  color: #111827;
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.05);
+}
+
+/* 요일 헤더 */
+.calendar-weekdays {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 4px;
+  margin-bottom: 4px;
+  font-size: 11px;
+  text-align: center;
+  color: #777;
+}
+
+/* 달력 그리드 */
+.calendar-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 4px;
+}
+
+.calendar-day {
+  position: relative;
+  border: none;
+  background-color: #fff;
+  border-radius: 6px;
+  padding: 4px 2px;
+  min-height: 40px;
+  text-align: left;
+  font-size: 12px;
+  box-shadow: 0 0 0 1px #eee;
+}
+
+/* ▶ 이번 달이 아닌 날짜(앞/뒤 달) */
+.calendar-day--outside-month {
+  background-color: #f3f3f3;
+  color: #aaa;
+}
+
+.calendar-day__number {
+  display: inline-block;
+  padding: 0 4px;
+}
+
+.calendar-day__dots {
+  position: absolute;
+  bottom: 3px;
+  right: 3px;      /* ← 오른쪽 아래 */
+  display: flex;
+  gap: 2px;
+}
+
+.calendar-day__dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 999px;
+  background-color: #007aff; /* JS에서 실제 색 덮어쓸 예정 */
+}
+
+.calendar-day--today {
+  box-shadow: 0 0 0 1px #007aff;
+}
+
+.calendar-day--selected {
+  background-color: #eaf4ff;
+  box-shadow: 0 0 0 1px #007aff;
+}
+
+/* 선택된 날짜 상세 */
+.day-detail {
+  border: 1px solid #eee;
+  border-radius: 8px;
+  padding: 8px;
+  background-color: #fff;
+  margin-bottom: 16px;
+}
+
+.day-detail__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.day-detail__date-label {
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.day-detail__add-button {
+  border-radius: 999px;
+  border: none;
+  background-color: #007aff;
+  color: #fff;
+  font-size: 12px;
+  padding: 4px 10px;
+}
+
+/* 일정 리스트 */
+.event-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.event-list__item {
+}
+
+.event-list__button {
+  width: 100%;
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  border-radius: 6px;
+  border: 1px solid #eee;
+  background-color: #fafafa;
+  padding: 6px 8px;
+  text-align: left;
+}
+
+.event-list__time {
+  min-width: 72px;
+  font-size: 11px;
+  color: #555;
+}
+
+.event-list__time-separator {
+  margin: 0 2px;
+}
+
+.event-list__content {
+  flex: 1;
+}
+
+.event-list__title {
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.event-list__meta {
+  margin-top: 2px;
+  font-size: 10px;
+  color: #888;
+}
+
+.event-list__meta-item--memo {
+  font-size: 11px;
+  color: #6b7280;
+}
+
+.event-list__color-bar {
+  width: 4px;
+  align-self: stretch;
+  border-radius: 999px;
+  margin-right: 6px;
+}
+
+/* 플로팅 + 버튼 */
+.fab {
+  position: fixed;
+  right: 16px;
+  bottom: 72px; /* 하단 탭바 위로 띄우기 */
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  border: none;
+  font-size: 24px;
+  line-height: 1;
+  background-color: #ff7b00;
+  color: #fff;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+/* ───────────────────────── */
+/* 화면 2: 하루 타임테이블  */
+/* ───────────────────────── */
+
+.screen--day {
+  padding-bottom: 8px;
+}
+
+.day-screen-header {
+  border: 1px solid #eee;
+  border-radius: 8px;
+  padding: 8px;
+  background-color: #fff;
+  margin-bottom: 8px;
+}
+
+.day-screen-header__top-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+
+.day-screen-title {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.day-screen-date-button {
+  border-radius: 999px;
+  border: 1px solid #ddd;
+  background-color: #fafafa;
+  padding: 4px 8px;
+  font-size: 12px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.day-screen-header__actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.btn-outline {
+  border: 1px solid #ccc;
+  background-color: #fff;
+  font-size: 11px;
+  padding: 4px 8px;
+}
+
+/* 타임라인 영역 */
+.timeline {
+  border: 1px solid #eee;
+  border-radius: 8px;
+  background-color: #fff;
+  max-height: 400px;
+  overflow-y: auto;
+  padding: 4px 0;
+  margin-bottom: 8px;
+}
+
+.timeline__hour-row {
+  display: flex;
+  align-items: flex-start;
+  padding: 4px 8px;
+  gap: 8px;
+  border-bottom: 1px dashed #f0f0f0;
+}
+
+.timeline__hour-label {
+  width: 52px;
+  font-size: 11px;
+  color: #999;
+  flex-shrink: 0;
+}
+
+.timeline__blocks {
+  flex: 1;
+  min-height: 24px;
+  position: relative;
+}
+
+/* 시간 블록(예시용) */
+.time-block {
+  display: block;
+  width: 100%;
+  border-radius: 6px;
+  border: 1px solid #cce4ff;
+  background-color: #eaf4ff;
+  padding: 4px 6px;
+  font-size: 11px;
+  text-align: left;
+  margin-bottom: 4px;
+}
+
+.time-block__title {
+  font-weight: 500;
+}
+
+.time-block__time {
+  font-size: 10px;
+  color: #666;
+}
+
+/* 선택된 블록 상세 */
+.time-block-detail {
+  border: 1px solid #eee;
+  border-radius: 8px;
+  padding: 8px;
+  background-color: #fff;
+  margin-bottom: 12px;
+}
+
+.time-block-detail__empty {
+  font-size: 12px;
+  color: #777;
+}
+
+.time-block-detail__content {
+  font-size: 12px;
+}
+
+.time-block-detail__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-bottom: 6px;
+}
+
+.time-block-detail__title {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.time-block-detail__time-range {
+  font-size: 11px;
+  color: #555;
+}
+
+.time-block-detail__field {
+  margin-bottom: 6px;
+}
+
+.time-block-detail__label {
+  font-size: 11px;
+  color: #777;
+}
+
+.time-block-detail__value {
+  margin: 2px 0 0;
+}
+
+.time-block-detail__actions {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-top: 6px;
+}
+
+.btn-danger {
+  border: 1px solid #ff4b4b;
+  background-color: #ffe6e6;
+  color: #b00000;
+  font-size: 11px;
+  padding: 4px 8px;
+}
+
+/* ─────────────────────── */
+/* 하단 탭바 (고정 네비게이션) */
+/* ─────────────────────── */
+
+.bottom-nav {
+  position: sticky;
+  bottom: 0;
+  z-index: 10;
+  display: flex;
+  border-top: 1px solid #ddd;
+  background-color: #fff;
+}
+
+.bottom-nav__item {
+  flex: 1;
+  border: none;
+  background: none;
+  padding: 6px 4px 8px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  font-size: 11px;
+  color: #777;
+}
+
+.bottom-nav__icon {
+  font-size: 18px;
+}
+
+.bottom-nav__item--active {
+  color: #007aff;
+}
+
+/* ───────────────────────── */
+/* 화면 3: 투두 리스트      */
+/* ───────────────────────── */
+
+.screen--todo {
+  padding-bottom: 8px;
+}
+
+/* 상단 헤더 */
+.todo-header {
+  border: 1px solid #eee;
+  border-radius: 8px;
+  padding: 8px;
+  background-color: #fff;
+  margin-bottom: 8px;
+}
+
+.todo-header__top-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+
+.todo-title {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.todo-date-button {
+  border-radius: 999px;
+  border: 1px solid #ddd;
+  background-color: #fafafa;
+  padding: 4px 8px;
+  font-size: 12px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.todo-date-label {
+  font-size: 12px;
+}
+
+.todo-date-chevron {
+  font-size: 10px;
+  color: #777;
+}
+
+.todo-header__actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+/* 필터 영역 */
+.todo-filters {
+  margin-bottom: 8px;
+}
+
+.todo-filters__row {
+  display: flex;
+  gap: 6px;
+}
+
+.todo-filter {
+  border-radius: 999px;
+  border: 1px solid #ddd;
+  background-color: #fafafa;
+  font-size: 11px;
+  padding: 4px 10px;
+  color: #555;
+}
+
+.todo-filter--active {
+  background-color: #007aff;
+  border-color: #007aff;
+  color: #fff;
+}
+
+/* 투두 목록 */
+.todo-section {
+  border: 1px solid #eee;
+  border-radius: 8px;
+  background-color: #fff;
+  padding: 8px;
+  margin-bottom: 8px;
+}
+
+.todo-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.todo-item {
+  border-radius: 6px;
+  border: 1px solid #eee;
+  background-color: #fafafa;
+  padding: 6px 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.todo-item__main {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.todo-item__checkbox {
+  width: 16px;
+  height: 16px;
+}
+
+.todo-item__title {
+  font-size: 13px;
+  color: #222;
+}
+
+.todo-item__meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 11px;
+}
+
+.todo-item__tag {
+  padding: 2px 6px;
+  border-radius: 999px;
+  background-color: #eaf4ff;
+  color: #3366aa;
+}
+
+.todo-item__delete-button {
+  border: none;
+  background: none;
+  font-size: 11px;
+  color: #b00000;
+  padding: 2px 4px;
+}
+
+/* 완료된 투두 스타일 */
+.todo-item--done .todo-item__title {
+  color: #999;
+  text-decoration: line-through;
+}
+
+.todo-item--done {
+  opacity: 0.7;
+}
+
+/* 빈 상태 메시지 */
+.todo-empty-message {
+  margin-top: 4px;
+  font-size: 12px;
+  color: #777;
+}
+
+/* 하단 입력 바 */
+.todo-input-bar {
+  position: sticky;
+  bottom: 56px; /* 하단 탭바 위에 고정 느낌 */
+  background-color: #fff;
+  padding: 6px 0 4px;
+}
+
+.todo-input-bar__form {
+  display: flex;
+  gap: 6px;
+}
+
+.todo-input {
+  flex: 1;
+  border-radius: 999px;
+  border: 1px solid #ddd;
+  padding: 6px 10px;
+  font-size: 13px;
+}
+
+.todo-input-bar__add-button {
+  border-radius: 999px;
+  border: none;
+  background-color: #007aff;
+  color: #fff;
+  font-size: 13px;
+  padding: 6px 10px;
+}
+
+/* ───────────────────────── */
+/* 바텀시트 (공용 입력 폼)  */
+/* ───────────────────────── */
+
+.bottom-sheet {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  pointer-events: none;
+}
+
+.bottom-sheet__overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.15);
+  opacity: 0;
+  transition: opacity 0.2s ease-out;
+}
+
+.bottom-sheet__panel {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  max-width: 480px;
+  margin: 0 auto;
+  background-color: #fff;
+  border-radius: 16px 16px 0 0;
+  box-shadow: 0 -4px 16px rgba(0, 0, 0, 0.16);
+  transform: translateY(100%);
+  transition: transform 0.25s ease-out;
+  padding: 12px 14px 10px;
+}
+
+/* 활성 상태일 때 */
+.bottom-sheet.bottom-sheet--visible {
+  pointer-events: auto;
+}
+
+.bottom-sheet.bottom-sheet--visible .bottom-sheet__overlay {
+  opacity: 1;
+}
+
+.bottom-sheet.bottom-sheet--visible .bottom-sheet__panel {
+  transform: translateY(0);
+}
+
+.bottom-sheet__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+
+.bottom-sheet__title {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.bottom-sheet__close {
+  border: none;
+  background: none;
+  font-size: 18px;
+  padding: 4px;
+}
+
+.bottom-sheet__form {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.bottom-sheet__field {
+  width: 100%;
+}
+
+.bottom-sheet__label {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 12px;
+  color: #555;
+}
+
+.bottom-sheet__input {
+  border-radius: 8px;
+  border: 1px solid #ddd;
+  padding: 6px 8px;
+  font-size: 13px;
+}
+
+.bottom-sheet__row {
+  display: flex;
+  gap: 8px;
+}
+
+.bottom-sheet__row .bottom-sheet__field {
+  flex: 1;
+}
+
+.bottom-sheet__footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.bottom-sheet__button {
+  border-radius: 999px;
+  padding: 6px 12px;
+  font-size: 13px;
+  border: 1px solid transparent;
+}
+
+.bottom-sheet__button--secondary {
+  border-color: #ddd;
+  background-color: #f5f5f5;
+  color: #555;
+}
+
+.bottom-sheet__button--primary {
+  background-color: #007aff;
+  border-color: #007aff;
+  color: #fff;
+}
+
+.bottom-sheet__field--colors {
+  margin-top: 4px;
+}
+
+.bottom-sheet__colors {
+  display: flex;
+  gap: 6px;
+  margin-top: 4px;
+}
+
+.bottom-sheet__color-option {
+  width: 20px;
+  height: 20px;
+  border-radius: 999px;
+  border: 2px solid transparent;
+  padding: 0;
+  background-clip: padding-box;
+}
+
+/* 팔레트 색상 (JS의 EVENT_COLOR_PALETTE와 순서 동일!) */
+.bottom-sheet__color-option[data-color-index="0"] {
+  background-color: #F29191;
+}
+.bottom-sheet__color-option[data-color-index="1"] {
+  background-color: #F2C891;
+}
+.bottom-sheet__color-option[data-color-index="2"] {
+  background-color: #F2E791;
+}
+.bottom-sheet__color-option[data-color-index="3"] {
+  background-color: #D1F485;
+}
+.bottom-sheet__color-option[data-color-index="4"] {
+  background-color: #83E697;
+}
+.bottom-sheet__color-option[data-color-index="5"] {
+  background-color: #74C1E8;
+}
+.bottom-sheet__color-option[data-color-index="6"] {
+  background-color: #749BE8;
+}
+.bottom-sheet__color-option[data-color-index="7"] {
+  background-color: #B783EB;
+}
+.bottom-sheet__color-option[data-color-index="8"] {
+  background-color: #FFCCEE;
+}
+.bottom-sheet__color-option[data-color-index="9"] {
+  background-color: #BCBCBC;
+}
+/* 선택된 색 강조 */
+.bottom-sheet__color-option--selected {
+  border-color: #111827;
+}
+.bottom-sheet__button--danger {
+  background-color: #ef4444;
+  border-color: #ef4444;
+  color: #fff;
+}
+.bottom-sheet__textarea {
+  width: 100%;
+  border-radius: 8px;
+  border: 1px solid #ddd;
+  padding: 6px 8px;
+  font-size: 13px;
+  resize: vertical;
+  min-height: 48px;
+  line-height: 1.4;
+}
+
+.calendar-grid--month {
+  touch-action: pan-y; /* 세로 스크롤은 브라우저가 처리, 가로는 우리가 JS로 처리 */
+}
