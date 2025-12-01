@@ -919,34 +919,34 @@ body {
 
 /* 팔레트 색상 (JS의 EVENT_COLOR_PALETTE와 순서 동일!) */
 .bottom-sheet__color-option[data-color-index="0"] {
-  background-color: #F29191;
+  background-color: rgb(242, 145, 145);
 }
 .bottom-sheet__color-option[data-color-index="1"] {
-  background-color: #F2C891;
+  background-color: rgb(242, 200, 145);
 }
 .bottom-sheet__color-option[data-color-index="2"] {
-  background-color: #F2E791;
+  background-color: rgb(242, 231, 145);
 }
 .bottom-sheet__color-option[data-color-index="3"] {
-  background-color: #D1F485;
+  background-color: rgb(203, 236, 133);
 }
 .bottom-sheet__color-option[data-color-index="4"] {
-  background-color: #83E697;
+  background-color: rgb(141, 227, 158);
 }
 .bottom-sheet__color-option[data-color-index="5"] {
-  background-color: #74C1E8;
+  background-color: rgb(116, 193, 232);
 }
 .bottom-sheet__color-option[data-color-index="6"] {
-  background-color: #749BE8;
+  background-color: rgb(116, 155, 232);
 }
 .bottom-sheet__color-option[data-color-index="7"] {
-  background-color: #B783EB;
+  background-color: rgb(183, 131, 235);
 }
 .bottom-sheet__color-option[data-color-index="8"] {
-  background-color: #FFCCEE;
+  background-color: rgb(255, 204, 238);
 }
 .bottom-sheet__color-option[data-color-index="9"] {
-  background-color: #BCBCBC;
+  background-color: rgb(188, 188, 188);
 }
 /* 선택된 색 강조 */
 .bottom-sheet__color-option--selected {
@@ -998,8 +998,9 @@ body {
   display: flex;
   gap: 8px;
   padding: 8px 12px 12px;
-  height: calc(100vh - 140px); /* 헤더/탭바 등 감안해서 대략 */
   box-sizing: border-box;
+  /* height: calc(100vh - 140px);  ← 삭제 */
+  min-height: 320px;  /* 적당한 기본 높이만, 필요하면 값 조절 */
 }
 
 .day-screen-left,
@@ -1044,13 +1045,13 @@ body {
   gap: 2px;
 }
 
-/* 한 줄 = 1시간 */
+/* 한 줄 = 1시간 (05, 06, ..., 04) */
 .timetable-row {
   display: grid;
-  grid-template-columns: 32px 1fr;
-  align-items: stretch;  /* 🔹 높이 맞추기 */
+  grid-template-columns: 32px 1fr; /* 왼쪽 라벨 / 오른쪽 12칸 */
+  align-items: stretch;           /* 줄 높이에 맞게 쭉 */
   column-gap: 4px;
-  height: 18px;         /* 제목 1줄 정도 */
+  height: 18px;                   /* 제목 한 줄 정도 높이 */
 }
 
 .timetable-row-label {
@@ -1061,36 +1062,43 @@ body {
   box-sizing: border-box;
 }
 
-/* 오른쪽: 12칸 그리드 */
+/* 오른쪽: 5분×12칸 grid */
 .timetable-row-grid {
   display: grid;
   grid-template-columns: repeat(12, 1fr);
-  column-gap: 1px;
+  grid-template-rows: 1fr;    /* 🔹 딱 1줄만 존재하게 */
+  column-gap: 0;
   height: 100%;
-  align-items: stretch;   /* 🔹 안의 요소들이 줄 높이에 맞게 늘어나도록 */
+  align-items: stretch;
   position: relative;
 }
 
-/* 빈 회색 칸(ㅇ) */
+/* 12칸 회색칸은 항상 row 1 */
 .timetable-cell {
+  grid-row: 1 / 2;           /* 🔹 1번째 줄에 고정 */
   height: 100%;
-  background-color: #e5e7eb;  /* 🔹 모든 빈 영역은 이 회색 */
-  border-radius: 3px;
+  background-color: #f3f4f6;
+  border-radius: 2px;
 }
 
-/* 채워진 구간(ㅁㅁㅁ...) */
+/* 색 블록도 같은 row 위에 겹치도록 */
 .timetable-block {
-  height: 100%;              /* 🔹 회색 칸 높이와 동일하게 */
+  grid-row: 1 / 2;
+  height: 100%;
   border-radius: 3px;
   font-size: 9px;
   padding: 0 3px;
-  margin: 0;                 /* 🔹 여백 없애기 */
+  margin: 0;
   display: flex;
   align-items: center;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
   box-sizing: border-box;
+  z-index: 1;
+
+  border: 1px solid transparent;
+  color: #111827;
 }
 
 /* 5분 그리드 선 느낌 (선택사항: 너무 지저분하면 없애도 됨) */
@@ -1153,10 +1161,9 @@ body {
   color: #6b7280;
 }
 
-.timeblock-list__delete-btn {
-  border: none;
-  background: none;
-  font-size: 11px;
-  color: #9ca3af;
-  padding: 2px 4px;
+
+
+/* === 스타일 파일 제일 마지막에 추가 === */
+.timetable-block {
+  color: #111827 !important;
 }

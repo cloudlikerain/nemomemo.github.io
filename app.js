@@ -22,16 +22,14 @@ document.addEventListener("DOMContentLoaded", () => {
     return `${y}년 ${Number(m)}월 ${Number(d)}일`;
   }
 
-  // "HH:MM" → 가장 가까운 5분 단위로 스냅해서 "HH:MM" 반환
+  // "HH:MM" → 가장 가까운 5분 단위로 스냅해서 "HH:MM"
   function snapTimeTo5Minutes(timeStr) {
     const [h, m] = timeStr.split(":").map(Number);
     if (isNaN(h) || isNaN(m)) return timeStr;
 
     let total = h * 60 + m;
-    // 5분 단위로 반올림
     let snapped = Math.round(total / 5) * 5;
 
-    // 범위 보정 (00:00 ~ 23:55)
     if (snapped < 0) snapped = 0;
     const maxMinutes = 23 * 60 + 55;
     if (snapped > maxMinutes) snapped = maxMinutes;
@@ -42,21 +40,32 @@ document.addEventListener("DOMContentLoaded", () => {
     return `${String(hh).padStart(2, "0")}:${String(mm).padStart(2, "0")}`;
   }
 
-
   const TODAY = formatDateToYMD(new Date());
 
-  // 이벤트 색상 팔레트 (인덱스로만 저장)
   const EVENT_COLOR_PALETTE = [
-    "#F29191", // 0 - 빨강
-    "#F2C891", // 1 - 주황
-    "#F2E791", // 2 - 노랑
-    "#D1F485", // 3 - 연두
-    "#83E697", // 4 - 초록
-    "#74C1E8", // 5 - 하늘
-    "#749BE8", // 6 - 파랑
-    "#B783EB", // 7 - 보라
-    "#FFCCEE", // 8 - 분홍
-    "#BCBCBC", // 9 - 회색
+    "rgb(242, 145, 145)", // 0 - 빨강
+    "rgb(242, 200, 145)", // 1 - 주황
+    "rgb(242, 231, 145)", // 2 - 노랑
+    "rgb(203, 236, 133)", // 3 - 연두
+    "rgb(141, 227, 158)", // 4 - 초록
+    "rgb(116, 193, 232)", // 5 - 하늘
+    "rgb(116, 155, 232)", // 6 - 파랑
+    "rgb(183, 131, 235)", // 7 - 보라
+    "rgb(255, 204, 238)", // 8 - 분홍
+    "rgb(188, 188, 188)", // 9 - 회색
+  ];
+  // 이벤트 색상 팔레트 (인덱스로만 저장)
+  const EVENT_COLOR_BG_PALETTE = [
+    "rgba(242, 145, 145, 0.33)", // 0 - 빨강
+    "rgba(242, 200, 145, 0.33)", // 1 - 주황
+    "rgba(242, 231, 145, 0.33)", // 2 - 노랑
+    "rgba(203, 236, 133, 0.33)", // 3 - 연두
+    "rgba(141, 227, 158, 0.33)", // 4 - 초록
+    "rgba(116, 193, 232, 0.33)", // 5 - 하늘
+    "rgba(116, 155, 232, 0.33)", // 6 - 파랑
+    "rgba(183, 131, 235, 0.33)", // 7 - 보라
+    "rgba(255, 204, 238, 0.33)", // 8 - 분홍
+    "rgba(188, 188, 188, 0.33)", // 9 - 회색
   ];
 
   /* ----------------------------------------
@@ -114,6 +123,20 @@ document.addEventListener("DOMContentLoaded", () => {
   );
   const sheetEndInput = document.querySelector(".bottom-sheet__input--end");
   const sheetMemoInput = document.querySelector(".bottom-sheet__input--memo");
+
+  // 시간 인풋을 항상 5분 단위로 정리해주기
+  if (sheetStartInput) {
+    sheetStartInput.addEventListener("change", () => {
+      sheetStartInput.value = snapTimeTo5Minutes(sheetStartInput.value);
+    });
+  }
+
+  if (sheetEndInput) {
+    sheetEndInput.addEventListener("change", () => {
+      sheetEndInput.value = snapTimeTo5Minutes(sheetEndInput.value);
+    });
+  }
+
   const sheetCloseBtn = document.querySelector(".bottom-sheet__close");
   const sheetCancelBtn = document.querySelector(
     "[data-sheet-action='cancel']"
@@ -130,6 +153,9 @@ document.addEventListener("DOMContentLoaded", () => {
   );
   const sheetDeleteBtn = document.querySelector(
     "[data-sheet-action='delete-event']"
+  );
+  const sheetBlockIdInput = document.querySelector(
+    ".bottom-sheet__input--block-id"
   );
 
   function setSheetColorIndex(index) {
@@ -163,7 +189,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const isNewEvent = mode === "event";
     const isEditEvent = mode === "edit-event";
     const isTimeblock = mode === "timeblock";
-
+    const isEditTimeblock = mode === "edit-timeblock";
     // 🔹 타이틀
     if (isNewEvent) {
       sheetTitleEl.textContent = "새 일정 추가";
@@ -171,13 +197,19 @@ document.addEventListener("DOMContentLoaded", () => {
       sheetTitleEl.textContent = "일정 수정";
     } else if (isTimeblock) {
       sheetTitleEl.textContent = "새 타임블록 추가";
+    } else if (isEditTimeblock) {
+      sheetTitleEl.textContent = "타임블록 수정";
     } else {
       sheetTitleEl.textContent = "입력";
     }
 
     // 🔹 eventId 세팅 (편집 모드일 때만)
     if (sheetEventIdInput) {
-      sheetEventIdInput.value = options.eventId || "";
+      sheetEventIdInput.value = isEditEvent ? (options.eventId || "") : "";
+    }
+
+    if (sheetBlockIdInput) {
+      sheetBlockIdInput.value = isEditTimeblock ? (options.blockId || "") : "";
     }
 
     // 🔹 기본값 채우기
@@ -202,7 +234,8 @@ document.addEventListener("DOMContentLoaded", () => {
 
     // 🔹 삭제 버튼은 "일정 편집"일 때만 노출
     if (sheetDeleteBtn) {
-      sheetDeleteBtn.style.display = isEditEvent ? "" : "none";
+      sheetDeleteBtn.style.display =
+        isEditEvent || isEditTimeblock ? "" : "none";
     }
 
     sheet.classList.add("bottom-sheet--visible");
@@ -245,32 +278,44 @@ document.addEventListener("DOMContentLoaded", () => {
         // 편집 모드가 아니면 삭제 버튼은 안 씀
         return;
       }
+      if (mode === "edit-event") {
+        const targetId = sheetEventIdInput
+          ? sheetEventIdInput.value
+          : "";
+        if (!targetId) {
+          alert("삭제할 일정을 찾을 수 없어요.");
+          return;
+        }
 
-      const targetId = sheetEventIdInput
-        ? sheetEventIdInput.value
-        : "";
-      if (!targetId) {
-        alert("삭제할 일정을 찾을 수 없어요.");
-        return;
-      }
+        const ev = events.find((item) => item.id === targetId);
+        if (!ev) {
+          alert("이미 삭제되었거나 찾을 수 없는 일정입니다.");
+          closeBottomSheet();
+          return;
+        }
 
-      const ev = events.find((item) => item.id === targetId);
-      if (!ev) {
-        alert("이미 삭제되었거나 찾을 수 없는 일정입니다.");
+        const confirmDelete = window.confirm(
+          `정말 이 일정을 삭제할까요?\n\n제목: ${ev.title}\n시간: ${ev.startTime} ~ ${ev.endTime}`
+        );
+        if (!confirmDelete) return;
+
+        events = events.filter((item) => item.id !== targetId);
+        saveEventsToStorage();
+        setSelectedDate(currentSelectedDate);
         closeBottomSheet();
-        return;
+        alert("일정을 삭제했습니다.");
+      } else if (mode === "edit-timeblock") {
+        const blockId = sheetBlockIdInput ? sheetBlockIdInput.value : "";
+        if (!blockId) return;
+
+        const ok = window.confirm("이 타임블록을 삭제할까요?");
+        if (!ok) return;
+
+        timeBlocks = timeBlocks.filter((b) => b.id !== blockId);
+        saveTimeBlocksToStorage();
+        setTimelineDate(currentTimelineDate);
+        closeBottomSheet();
       }
-
-      const confirmDelete = window.confirm(
-        `정말 이 일정을 삭제할까요?\n\n제목: ${ev.title}\n시간: ${ev.startTime} ~ ${ev.endTime}`
-      );
-      if (!confirmDelete) return;
-
-      events = events.filter((item) => item.id !== targetId);
-      saveEventsToStorage();
-      setSelectedDate(currentSelectedDate);
-      closeBottomSheet();
-      alert("일정을 삭제했습니다.");
     });
   }
 
@@ -871,7 +916,7 @@ document.addEventListener("DOMContentLoaded", () => {
   // 하루 범위: 05:00 ~ 다음날 04:59
   const DAY_START_HOUR = 5;
   const DAY_TOTAL_HOURS = 24;
-  const SLOT_MINUTES = 5; // 5분
+  const SLOT_MINUTES = 5;         // 5분
   const SLOTS_PER_HOUR = 60 / SLOT_MINUTES; // 12
 
   function loadTimeBlocksFromStorage() {
@@ -916,23 +961,25 @@ document.addEventListener("DOMContentLoaded", () => {
     renderTimelineForDate(ymd);
   }
 
-  // "HH:MM" → 하루 기준 분(0~1439), 05시 이전은 +24h
-  function timeToDayMinutes(timeStr) {
+  // "HH:MM" → 05:00 기준 offset 분(0~1439)
+  function timeToOffsetMinutes(timeStr) {
     const [h, m] = timeStr.split(":").map(Number);
     if (isNaN(h) || isNaN(m)) return 0;
     let total = h * 60 + m;
+    // 05:00 이전(새벽)은 다음날로 간주해서 +24h
     if (total < DAY_START_HOUR * 60) {
       total += 24 * 60;
     }
-    return total;
+    const offset = total - DAY_START_HOUR * 60; // 05:00을 0으로
+    return Math.max(0, Math.min(offset, 24 * 60 - 1));
   }
 
-  // 해당 시간 라벨 생성용: 0~23(행 인덱스) → 실제 시각(05, 06, ..., 04)
+  // 시간 줄 인덱스(0~23) → 실제 시각(05, 06, ..., 04)
   function hourIndexToHour(hourIndex) {
     return (DAY_START_HOUR + hourIndex) % 24;
   }
 
-  // 블록 색 결정 (이벤트 색 → 블록색)
+  // 블록 색 인덱스 계산
   function getBlockColorIndex(block) {
     if (
       typeof block.colorIndex === "number" &&
@@ -955,21 +1002,28 @@ document.addEventListener("DOMContentLoaded", () => {
     return 0;
   }
 
-  const EVENT_COLOR_BG_PALETTE = [
-    "rgba(249, 115, 115, 0.25)",
-    "rgba(250, 204, 21, 0.25)",
-    "rgba(74, 222, 128, 0.25)",
-    "rgba(45, 212, 191, 0.25)",
-    "rgba(96, 165, 250, 0.25)",
-    "rgba(168, 85, 247, 0.25)",
-  ];
+  // 겹치는 블록 있는지 검사 (같은 날짜 내)
+  function hasOverlapTimeBlock(dateYMD, startTime, endTime, ignoreBlockId = null) {
+    const newStart = timeToOffsetMinutes(startTime);
+    const newEnd = timeToOffsetMinutes(endTime);
+
+    return timeBlocks.some((b) => {
+      if (b.date !== dateYMD) return false;
+      if (ignoreBlockId && b.id === ignoreBlockId) return false;
+
+      const bStart = timeToOffsetMinutes(b.start);
+      const bEnd = timeToOffsetMinutes(b.end);
+
+      return newStart < bEnd && newEnd > bStart;
+    });
+  }
 
   // 한 날짜의 타임테이블 전체 렌더
   function renderTimelineForDate(dateYMD) {
     if (!timetableEl) return;
     timetableEl.innerHTML = "";
 
-    // 24시간(행) 뼈대 만들기: 05,06,...,23,00,01,02,03,04
+    // 24시간(행) 뼈대 만들기: 05, 06, ..., 23, 00, 01, 02, 03, 04
     const rows = [];
     for (let hourIndex = 0; hourIndex < DAY_TOTAL_HOURS; hourIndex++) {
       const hour = hourIndexToHour(hourIndex);
@@ -984,7 +1038,7 @@ document.addEventListener("DOMContentLoaded", () => {
       grid.className = "timetable-row-grid";
       grid.dataset.hourIndex = String(hourIndex);
 
-      // 기본 12칸(ㅇㅇㅇㅇ...) 배경
+      // 기본 12칸(ㅇㅇㅇ...) 회색 칸
       for (let i = 0; i < SLOTS_PER_HOUR; i++) {
         const cell = document.createElement("div");
         cell.className = "timetable-cell";
@@ -1002,31 +1056,23 @@ document.addEventListener("DOMContentLoaded", () => {
       .filter((b) => b.date === dateYMD)
       .sort((a, b) => a.start.localeCompare(b.start));
 
-    // 각 블록을 1시간 단위로 쪼개서 해당 시간 줄에 가로바로 그리기
+    // 각 블록을 시간 줄별로 나눠서 가로바로 그리기
     todaysBlocks.forEach((block) => {
-      const startDayMin = timeToDayMinutes(block.start);
-      let endDayMin = timeToDayMinutes(block.end);
+      const startOffset = timeToOffsetMinutes(block.start);
+      let endOffset = timeToOffsetMinutes(block.end);
 
-      // 최소 5분은 칠해지게 보정
-      if (endDayMin <= startDayMin) {
-        endDayMin = startDayMin + SLOT_MINUTES;
+      if (endOffset <= startOffset) {
+        endOffset = startOffset + SLOT_MINUTES;
       }
 
       const colorIndex = getBlockColorIndex(block);
-      const borderColor =
+      const baseColor =
         EVENT_COLOR_PALETTE[colorIndex] || EVENT_COLOR_PALETTE[0];
-      const bgColor =
-        EVENT_COLOR_BG_PALETTE[colorIndex] || EVENT_COLOR_BG_PALETTE[0];
 
-      // 시작~끝이 걸치는 시간대들을 순회 (5시 기준 0~23 인덱스)
-      const firstHourIndex = Math.floor(
-        (startDayMin - DAY_START_HOUR * 60) / 60
-      );
-      const lastHourIndex = Math.floor(
-        (endDayMin - 1 - DAY_START_HOUR * 60) / 60
-      );
+      const firstHourIndex = Math.floor(startOffset / 60);
+      const lastHourIndex = Math.floor((endOffset - 1) / 60);
 
-      let isFirstSegment = true; // 🔹 첫 구간인지 여부
+      let isFirstSegment = true;
 
       for (
         let hourIndex = firstHourIndex;
@@ -1039,51 +1085,57 @@ document.addEventListener("DOMContentLoaded", () => {
         const rowGrid = rows[rowIndex];
         if (!rowGrid) continue;
 
-        const rowStartMin = DAY_START_HOUR * 60 + hourIndex * 60;
-        const rowEndMin = rowStartMin + 60;
+        const rowStart = hourIndex * 60;
+        const rowEnd = rowStart + 60;
 
-        const sliceStart = Math.max(startDayMin, rowStartMin);
-        const sliceEnd = Math.min(endDayMin, rowEndMin);
+        const sliceStart = Math.max(startOffset, rowStart);
+        const sliceEnd = Math.min(endOffset, rowEnd);
         if (sliceEnd <= sliceStart) continue;
 
-        const startOffsetMin = sliceStart - rowStartMin;
-        const endOffsetMin = sliceEnd - rowStartMin;
-
-        const startSlot = Math.floor(startOffsetMin / SLOT_MINUTES);
-        const endSlot = Math.ceil(endOffsetMin / SLOT_MINUTES);
+        const startSlot = Math.floor(
+          (sliceStart - rowStart) / SLOT_MINUTES
+        );
+        const endSlot = Math.ceil(
+          (sliceEnd - rowStart) / SLOT_MINUTES
+        );
 
         const blockEl = document.createElement("div");
         blockEl.className = "timetable-block";
 
-        // 🔹 제목은 첫 번째 줄에만 표시
         if (isFirstSegment) {
           blockEl.textContent = block.title;
           isFirstSegment = false;
-        } else {
-          blockEl.textContent = "";
         }
 
+        // 위치
         blockEl.style.gridColumn = `${startSlot + 1} / ${endSlot + 1}`;
-        blockEl.style.borderColor = borderColor;
-        blockEl.style.backgroundColor = bgColor;
+        blockEl.style.gridRow = "1 / 2"; // 혹시 없으면 1줄 고정
+        
+        const colorIndex = getBlockColorIndex(block);
+        const borderColor =
+          EVENT_COLOR_PALETTE[colorIndex] || EVENT_COLOR_PALETTE[0];
+        const bgColor =
+          EVENT_COLOR_BG_PALETTE[colorIndex] || "rgba(0,0,0,0.05)";
 
-        blockEl.dataset.blockId = block.id;
+        // 🔹 테두리 = 일정 색
+        blockEl.style.borderLeft = `2px solid ${baseColor}`;
+        blockEl.style.borderRight = `2px solid ${baseColor}`;
 
-        blockEl.addEventListener("click", () => {
-          alert(
-            `타임블록\n\n제목: ${block.title}\n시간: ${block.start} ~ ${block.end}`
-          );
-        });
+        // 🔹 배경 = 옅은 색 (투명도)
+        blockEl.style.backgroundColor = bgColor; // 🔹 배경만 옅게
+        // blockEl.style.opacity = "0.25";      // ❌ 이건 이제 없음
+
+        // 🔹 글자색 = 진하게 (회색 상속 방지)
+        blockEl.style.color = "#111827";
 
         rowGrid.appendChild(blockEl);
       }
-
     });
 
     renderTimeblockList(todaysBlocks);
   }
 
-  // 오른쪽 블록 목록
+  // 오른쪽: 블록 목록
   function renderTimeblockList(blocksForDate) {
     if (!timeblockListEl) return;
     timeblockListEl.innerHTML = "";
@@ -1125,24 +1177,8 @@ document.addEventListener("DOMContentLoaded", () => {
       content.appendChild(titleEl);
       content.appendChild(timeEl);
 
-      const deleteBtn = document.createElement("button");
-      deleteBtn.type = "button";
-      deleteBtn.className = "timeblock-list__delete-btn";
-      deleteBtn.textContent = "삭제";
-
-      deleteBtn.addEventListener("click", () => {
-        const ok = window.confirm(
-          `이 블록을 삭제할까요?\n\n제목: ${block.title}\n시간: ${block.start} ~ ${block.end}`
-        );
-        if (!ok) return;
-        timeBlocks = timeBlocks.filter((b) => b.id !== block.id);
-        saveTimeBlocksToStorage();
-        renderTimelineForDate(currentTimelineDate);
-      });
-
       li.appendChild(colorBar);
       li.appendChild(content);
-      li.appendChild(deleteBtn);
 
       timeblockListEl.appendChild(li);
     });
@@ -1173,7 +1209,9 @@ document.addEventListener("DOMContentLoaded", () => {
           "현재 날짜의 타임테이블을 모두 비울까요?"
         );
         if (!ok) return;
-        timeBlocks = timeBlocks.filter((b) => b.date !== currentTimelineDate);
+        timeBlocks = timeBlocks.filter(
+          (b) => b.date !== currentTimelineDate
+        );
         saveTimeBlocksToStorage();
         renderTimelineForDate(currentTimelineDate);
       });
@@ -1198,24 +1236,42 @@ document.addEventListener("DOMContentLoaded", () => {
         todaysEvents.forEach((ev) => {
           const alreadyExists = timeBlocks.some(
             (b) =>
-              b.date === currentTimelineDate && b.sourceEventId === ev.id
+              b.date === currentTimelineDate &&
+              b.sourceEventId === ev.id
           );
           if (alreadyExists) return;
+
+          const start = ev.startTime;
+          const end = ev.endTime;
+
+          if (hasOverlapTimeBlock(currentTimelineDate, start, end)) {
+            return;
+          }
+
+          const colorIndexFromEvent =
+            typeof ev.colorIndex === "number" &&
+            ev.colorIndex >= 0 &&
+            ev.colorIndex < EVENT_COLOR_PALETTE.length
+              ? ev.colorIndex
+              : 0;
 
           const block = {
             id: getNextTimeBlockId(),
             date: currentTimelineDate,
-            start: ev.startTime,
-            end: ev.endTime,
+            start,
+            end,
             title: ev.title,
             sourceEventId: ev.id,
+            colorIndex: colorIndexFromEvent,
           };
           timeBlocks.push(block);
           createdCount++;
         });
 
         if (createdCount === 0) {
-          alert("이미 이 날짜의 달력 일정들이 타임테이블에 모두 추가되어 있어요.");
+          alert(
+            "이미 이 날짜의 달력 일정들이 타임테이블에 모두 추가되어 있거나, 시간대가 겹쳐서 추가할 수 없어요."
+          );
           return;
         }
 
@@ -1228,7 +1284,9 @@ document.addEventListener("DOMContentLoaded", () => {
     if (exportImageBtn) {
       exportImageBtn.addEventListener("click", () => {
         if (!window.html2canvas) {
-          alert("이미지 저장 기능을 사용할 수 없어요 (html2canvas 미로딩).");
+          alert(
+            "이미지 저장 기능을 사용할 수 없어요 (html2canvas 미로딩)."
+          );
           return;
         }
         const target = document.querySelector(".day-screen-left");
@@ -1256,14 +1314,13 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   }
 
-
-
   /* ============================================================
      바텀시트 submit → 일정/블록 실제 저장
   ============================================================ */
   if (sheetForm) {
     sheetForm.addEventListener("submit", (e) => {
       e.preventDefault();
+
       const mode = sheetModeInput.value;
       const title = sheetTitleInput.value.trim();
       const date = sheetDateInput.value || TODAY;
@@ -1271,15 +1328,21 @@ document.addEventListener("DOMContentLoaded", () => {
       const rawStart = sheetStartInput.value;
       const rawEnd = sheetEndInput.value;
 
-      // 🔹 5분 단위로 스냅
+      // 🔹 5분 단위로 강제 스냅
       const start = snapTimeTo5Minutes(rawStart);
       const end = snapTimeTo5Minutes(rawEnd);
 
-      // 인풋에도 보정된 값 다시 써주기 (사용자 눈에도 정리된 상태로 보이게)
+      // 인풋에도 반영
       sheetStartInput.value = start;
       sheetEndInput.value = end;
 
       const memo = sheetMemoInput ? sheetMemoInput.value.trim() : "";
+
+      // start >= end인 경우 방어
+      if (start >= end) {
+        alert("시작 시간이 종료 시간보다 같거나 늦을 수는 없어요.");
+        return;
+      }
 
       if (!title || !date || !start || !end) {
         alert("모든 값을 입력해주세요.");
@@ -1339,6 +1402,12 @@ document.addEventListener("DOMContentLoaded", () => {
         setSelectedDate(date);
         alert("일정이 수정되었습니다.");
       } else if (mode === "timeblock") {
+        // 시간 겹침 검사
+        if (hasOverlapTimeBlock(date, start, end)) {
+          alert("해당 시간대에 이미 블록이 있어요. 겹치지 않게 조정해 주세요.");
+          return;
+        }
+
         const block = {
           id: getNextTimeBlockId(),
           date,
@@ -1346,14 +1415,37 @@ document.addEventListener("DOMContentLoaded", () => {
           end,
           title,
           sourceEventId: null,
-          colorIndex, // ✅ 타임블록도 색 인덱스를 가진다
+          colorIndex, // 🔹 바텀시트에서 고른 색
         };
         timeBlocks.push(block);
         saveTimeBlocksToStorage();
         setTimelineDate(date);
         alert("타임블록이 추가되었습니다.");
-      }
+      } else if (mode === "edit-timeblock") {
+        const blockId = sheetBlockIdInput ? sheetBlockIdInput.value : "";
+        const block = timeBlocks.find((b) => b.id === blockId);
+        if (!block) {
+          alert("해당 타임블록을 찾지 못했습니다.");
+          return;
+        }
 
+        // 겹침 방어 (자기 자신 제외)
+        if (hasOverlapTimeBlock(date, start, end, blockId)) {
+          alert("해당 시간대에 이미 다른 블록이 있어요.");
+          return;
+        }
+
+        block.title = title;
+        block.date = date;
+        block.start = start;
+        block.end = end;
+        block.colorIndex = colorIndex;
+
+        saveTimeBlocksToStorage();
+        setTimelineDate(date);
+        alert("타임블록이 수정되었습니다.");
+      }
+      
       closeBottomSheet();
     });
   }

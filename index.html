@@ -229,7 +229,6 @@
 
           <!-- ➡ 오른쪽: 블록 목록 -->
           <div class="day-screen-right">
-            <h2 class="day-screen-right__title">블록 목록</h2>
             <ul class="timeblock-list">
               <!-- JS에서 현재 날짜의 블록 목록을 채움 -->
             </ul>
@@ -400,6 +399,12 @@
           class="bottom-sheet__event-id"
           value=""
         />
+
+        <input
+          type="hidden"
+          class="bottom-sheet__input--block-id"
+        />
+
         <div class="bottom-sheet__field">
           <label class="bottom-sheet__label">
             제목
@@ -432,6 +437,8 @@
                 class="bottom-sheet__input bottom-sheet__input--start"
                 required
                 step="300"
+                min="00:00"
+                max="23:55"
               />
             </label>
           </div>
@@ -443,6 +450,8 @@
                 class="bottom-sheet__input bottom-sheet__input--end"
                 required
                 step="300"
+                min="00:00"
+                max="23:55"
               />
             </label>
           </div>
