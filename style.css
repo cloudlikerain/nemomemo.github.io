@@ -971,3 +971,190 @@ body {
 .calendar-grid--month {
   touch-action: pan-y; /* 세로 스크롤은 브라우저가 처리, 가로는 우리가 JS로 처리 */
 }
+
+/* ───────────────────────── */
+/* 하루 탭 레이아웃         */
+/* ───────────────────────── */
+
+.day-screen-header {
+  padding: 8px 12px;
+}
+
+.day-screen-header__top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+}
+
+.day-screen-header__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+/* 하루 화면: 좌/우 1:1 레이아웃 */
+.day-screen-layout {
+  display: flex;
+  gap: 8px;
+  padding: 8px 12px 12px;
+  height: calc(100vh - 140px); /* 헤더/탭바 등 감안해서 대략 */
+  box-sizing: border-box;
+}
+
+.day-screen-left,
+.day-screen-right {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+/* 모바일에서 너무 꽉 끼면 아래로 쌓이게 하고 싶으면 이 주석 해제
+@media (max-width: 768px) {
+  .day-screen-layout {
+    flex-direction: column;
+  }
+}
+*/
+
+.day-screen-right__title {
+  font-size: 13px;
+  font-weight: 600;
+  margin: 0 0 6px;
+}
+
+/* ───────────────────────── */
+/* 5분 단위 타임테이블      */
+/* ───────────────────────── */
+/* ───────────────────────── */
+/* 하루 탭: 시간×12칸 그리드 */
+/* ───────────────────────── */
+
+.timetable {
+  flex: 1;
+  border-radius: 8px;
+  border: 1px solid #e5e7eb;
+  background-color: #fff;
+  overflow-y: auto;
+  padding: 6px 6px 6px 0;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+/* 한 줄 = 1시간 (05, 06, ..., 04) */
+.timetable-row {
+  display: grid;
+  grid-template-columns: 32px 1fr; /* 왼쪽 시간 라벨 / 오른쪽 12칸 */
+  align-items: center;
+  column-gap: 4px;
+  height: 18px; /* 한 줄 높이: 제목 한 줄 정도 */
+}
+
+.timetable-row-label {
+  font-size: 10px;
+  color: #9ca3af;
+  text-align: right;
+  padding-right: 4px;
+  box-sizing: border-box;
+}
+
+/* 오른쪽: 5분×12칸 그리드 */
+.timetable-row-grid {
+  display: grid;
+  grid-template-columns: repeat(12, 1fr); /* 60분 / 5분 = 12칸 */
+  column-gap: 1px;
+  position: relative;
+  height: 100%;
+}
+
+/* 빈 칸(ㅇ) */
+.timetable-cell {
+  background-color: #f9fafb;
+  border-radius: 2px;
+}
+
+/* 채워진 구간(ㅁ들) : 블록이 여러 칸을 가로로 span */
+.timetable-block {
+  position: relative;
+  height: 100%;
+  border-radius: 4px;
+  font-size: 9px;
+  padding: 0 3px;
+  display: flex;
+  align-items: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  box-sizing: border-box;
+}
+
+/* 5분 그리드 선 느낌 (선택사항: 너무 지저분하면 없애도 됨) */
+.timetable::before {
+  content: "";
+  grid-column: 2;
+}
+
+/* ───────────────────────── */
+/* 오른쪽: 블록 목록         */
+/* ───────────────────────── */
+
+.timeblock-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  border-radius: 8px;
+  border: 1px solid #e5e7eb;
+  background-color: #fff;
+  flex: 1;
+  overflow-y: auto;
+}
+
+.timeblock-list__item {
+  display: flex;
+  align-items: center;
+  padding: 6px 8px;
+  gap: 6px;
+  border-bottom: 1px solid #f3f4f6;
+  font-size: 12px;
+}
+
+.timeblock-list__item:last-child {
+  border-bottom: none;
+}
+
+.timeblock-list__color-bar {
+  width: 4px;
+  align-self: stretch;
+  border-radius: 999px;
+}
+
+.timeblock-list__content {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.timeblock-list__title {
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.timeblock-list__time {
+  font-size: 11px;
+  color: #6b7280;
+}
+
+.timeblock-list__delete-btn {
+  border: none;
+  background: none;
+  font-size: 11px;
+  color: #9ca3af;
+  padding: 2px 4px;
+}

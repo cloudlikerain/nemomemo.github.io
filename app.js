@@ -827,21 +827,31 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   /* ============================================================
-     TimeBlock 모듈 (하루 타임테이블)
+     TimeBlock 모듈 (하루 타임테이블 – 05~다음날04, 5분×12칸 가로바)
   ============================================================ */
   const TIMEBLOCK_STORAGE_KEY = "nemomemo_timeblocks_v1";
 
-  const timelineElement = document.querySelector(".timeline");
-  const timelineHourRows = document.querySelectorAll(".timeline__hour-row");
+  // 하루 탭 DOM
+  const timetableEl = document.querySelector("#timetable");
   const dayScreenDateLabel = document.querySelector(".day-screen-date-label");
   const dayScreenDateButton = document.querySelector(".day-screen-date-button");
   const openBlockSheetBtn = document.querySelector(
     "[data-action='open-timeblock-sheet']"
   );
+  const exportImageBtn = document.querySelector(
+    "[data-action='export-timetable-image']"
+  );
+  const timeblockListEl = document.querySelector(".timeblock-list");
 
   let timeBlocks = [];
   let currentTimelineDate = TODAY;
   let timeBlockIdCounter = 1;
+
+  // 하루 범위: 05:00 ~ 다음날 04:59
+  const DAY_START_HOUR = 5;
+  const DAY_TOTAL_HOURS = 24;
+  const SLOT_MINUTES = 5; // 5분
+  const SLOTS_PER_HOUR = 60 / SLOT_MINUTES; // 12
 
   function loadTimeBlocksFromStorage() {
     try {
@@ -885,56 +895,232 @@ document.addEventListener("DOMContentLoaded", () => {
     renderTimelineForDate(ymd);
   }
 
-  function renderTimelineForDate(dateYMD) {
-    if (!timelineElement) return;
-    timelineHourRows.forEach((row) => {
-      const blocksContainer = row.querySelector(".timeline__blocks");
-      if (blocksContainer) {
-        blocksContainer.innerHTML = "";
-      }
-    });
+  // "HH:MM" → 하루 기준 분(0~1439), 05시 이전은 +24h
+  function timeToDayMinutes(timeStr) {
+    const [h, m] = timeStr.split(":").map(Number);
+    if (isNaN(h) || isNaN(m)) return 0;
+    let total = h * 60 + m;
+    if (total < DAY_START_HOUR * 60) {
+      total += 24 * 60;
+    }
+    return total;
+  }
 
+  // 해당 시간 라벨 생성용: 0~23(행 인덱스) → 실제 시각(05, 06, ..., 04)
+  function hourIndexToHour(hourIndex) {
+    return (DAY_START_HOUR + hourIndex) % 24;
+  }
+
+  // 블록 색 결정 (이벤트 색 → 블록색)
+  function getBlockColorIndex(block) {
+    if (
+      typeof block.colorIndex === "number" &&
+      block.colorIndex >= 0 &&
+      block.colorIndex < EVENT_COLOR_PALETTE.length
+    ) {
+      return block.colorIndex;
+    }
+    if (block.sourceEventId) {
+      const ev = events.find((e) => e.id === block.sourceEventId);
+      if (
+        ev &&
+        typeof ev.colorIndex === "number" &&
+        ev.colorIndex >= 0 &&
+        ev.colorIndex < EVENT_COLOR_PALETTE.length
+      ) {
+        return ev.colorIndex;
+      }
+    }
+    return 0;
+  }
+
+  const EVENT_COLOR_BG_PALETTE = [
+    "rgba(249, 115, 115, 0.25)",
+    "rgba(250, 204, 21, 0.25)",
+    "rgba(74, 222, 128, 0.25)",
+    "rgba(45, 212, 191, 0.25)",
+    "rgba(96, 165, 250, 0.25)",
+    "rgba(168, 85, 247, 0.25)",
+  ];
+
+  // 한 날짜의 타임테이블 전체 렌더
+  function renderTimelineForDate(dateYMD) {
+    if (!timetableEl) return;
+    timetableEl.innerHTML = "";
+
+    // 24시간(행) 뼈대 만들기: 05,06,...,23,00,01,02,03,04
+    const rows = [];
+    for (let hourIndex = 0; hourIndex < DAY_TOTAL_HOURS; hourIndex++) {
+      const hour = hourIndexToHour(hourIndex);
+      const row = document.createElement("div");
+      row.className = "timetable-row";
+
+      const label = document.createElement("div");
+      label.className = "timetable-row-label";
+      label.textContent = String(hour).padStart(2, "0");
+
+      const grid = document.createElement("div");
+      grid.className = "timetable-row-grid";
+      grid.dataset.hourIndex = String(hourIndex);
+
+      // 기본 12칸(ㅇㅇㅇㅇ...) 배경
+      for (let i = 0; i < SLOTS_PER_HOUR; i++) {
+        const cell = document.createElement("div");
+        cell.className = "timetable-cell";
+        grid.appendChild(cell);
+      }
+
+      row.appendChild(label);
+      row.appendChild(grid);
+      timetableEl.appendChild(row);
+      rows.push(grid);
+    }
+
+    // 이 날짜의 블록들
     const todaysBlocks = timeBlocks
       .filter((b) => b.date === dateYMD)
       .sort((a, b) => a.start.localeCompare(b.start));
 
+    // 각 블록을 1시간 단위로 쪼개서 해당 시간 줄에 가로바로 그리기
     todaysBlocks.forEach((block) => {
-      const startHour = block.start.slice(0, 2) + ":00";
-      const hourRow = Array.from(timelineHourRows).find(
-        (row) => row.dataset.time === startHour
+      const startDayMin = timeToDayMinutes(block.start);
+      let endDayMin = timeToDayMinutes(block.end);
+
+      // 최소 5분은 칠해지게 보정
+      if (endDayMin <= startDayMin) {
+        endDayMin = startDayMin + SLOT_MINUTES;
+      }
+
+      const colorIndex = getBlockColorIndex(block);
+      const borderColor =
+        EVENT_COLOR_PALETTE[colorIndex] || EVENT_COLOR_PALETTE[0];
+      const bgColor =
+        EVENT_COLOR_BG_PALETTE[colorIndex] || EVENT_COLOR_BG_PALETTE[0];
+
+      // 시작~끝이 걸치는 시간대들을 순회 (5시 기준 0~23 인덱스)
+      const firstHourIndex = Math.floor(
+        (startDayMin - DAY_START_HOUR * 60) / 60
       );
-      if (!hourRow) return;
-      const container = hourRow.querySelector(".timeline__blocks");
-      if (!container) return;
+      const lastHourIndex = Math.floor(
+        (endDayMin - 1 - DAY_START_HOUR * 60) / 60
+      );
 
-      const btn = document.createElement("button");
-      btn.className = "time-block";
-      btn.type = "button";
-      btn.dataset.blockId = block.id;
+      for (
+        let hourIndex = firstHourIndex;
+        hourIndex <= lastHourIndex;
+        hourIndex++
+      ) {
+        const rowIndex = ((hourIndex % DAY_TOTAL_HOURS) + DAY_TOTAL_HOURS) % DAY_TOTAL_HOURS;
+        const rowGrid = rows[rowIndex];
+        if (!rowGrid) continue;
 
-      const titleSpan = document.createElement("span");
-      titleSpan.className = "time-block__title";
-      titleSpan.textContent = block.title;
+        const rowStartMin = DAY_START_HOUR * 60 + hourIndex * 60;
+        const rowEndMin = rowStartMin + 60;
 
-      const timeSpan = document.createElement("span");
-      timeSpan.className = "time-block__time";
-      timeSpan.textContent = `${block.start}–${block.end}`;
+        const sliceStart = Math.max(startDayMin, rowStartMin);
+        const sliceEnd = Math.min(endDayMin, rowEndMin);
+        if (sliceEnd <= sliceStart) continue;
 
-      btn.appendChild(titleSpan);
-      btn.appendChild(timeSpan);
-      container.appendChild(btn);
+        // 이 시간 줄 안에서의 5분 칸 인덱스 (0~11)
+        const startOffsetMin = sliceStart - rowStartMin;
+        const endOffsetMin = sliceEnd - rowStartMin;
 
-      btn.addEventListener("click", () => {
-        alert(
-          `타임블록\n\n제목: ${block.title}\n시간: ${block.start} ~ ${block.end}`
+        const startSlot = Math.floor(startOffsetMin / SLOT_MINUTES);
+        const endSlot = Math.ceil(endOffsetMin / SLOT_MINUTES);
+
+        const blockEl = document.createElement("div");
+        blockEl.className = "timetable-block";
+        blockEl.textContent = block.title;
+
+        // 예: 13:15~13:45 → startSlot=3, endSlot=9
+        // grid-column: 4 / 10 → ㅇㅇㅇㅁㅁㅁㅁㅁㅁㅇㅇㅇ
+        blockEl.style.gridColumn = `${startSlot + 1} / ${endSlot + 1}`;
+        blockEl.style.borderColor = borderColor;
+        blockEl.style.backgroundColor = bgColor;
+
+        blockEl.dataset.blockId = block.id;
+
+        blockEl.addEventListener("click", () => {
+          alert(
+            `타임블록\n\n제목: ${block.title}\n시간: ${block.start} ~ ${block.end}`
+          );
+        });
+
+        rowGrid.appendChild(blockEl);
+      }
+    });
+
+    renderTimeblockList(todaysBlocks);
+  }
+
+  // 오른쪽 블록 목록
+  function renderTimeblockList(blocksForDate) {
+    if (!timeblockListEl) return;
+    timeblockListEl.innerHTML = "";
+
+    if (blocksForDate.length === 0) {
+      const li = document.createElement("li");
+      li.className = "timeblock-list__item";
+      li.textContent = "등록된 블록이 없어요.";
+      li.style.fontSize = "11px";
+      li.style.color = "#6b7280";
+      timeblockListEl.appendChild(li);
+      return;
+    }
+
+    blocksForDate.forEach((block) => {
+      const li = document.createElement("li");
+      li.className = "timeblock-list__item";
+      li.dataset.blockId = block.id;
+
+      const colorIndex = getBlockColorIndex(block);
+      const color =
+        EVENT_COLOR_PALETTE[colorIndex] || EVENT_COLOR_PALETTE[0];
+
+      const colorBar = document.createElement("div");
+      colorBar.className = "timeblock-list__color-bar";
+      colorBar.style.backgroundColor = color;
+
+      const content = document.createElement("div");
+      content.className = "timeblock-list__content";
+
+      const titleEl = document.createElement("div");
+      titleEl.className = "timeblock-list__title";
+      titleEl.textContent = block.title;
+
+      const timeEl = document.createElement("div");
+      timeEl.className = "timeblock-list__time";
+      timeEl.textContent = `${block.start} ~ ${block.end}`;
+
+      content.appendChild(titleEl);
+      content.appendChild(timeEl);
+
+      const deleteBtn = document.createElement("button");
+      deleteBtn.type = "button";
+      deleteBtn.className = "timeblock-list__delete-btn";
+      deleteBtn.textContent = "삭제";
+
+      deleteBtn.addEventListener("click", () => {
+        const ok = window.confirm(
+          `이 블록을 삭제할까요?\n\n제목: ${block.title}\n시간: ${block.start} ~ ${block.end}`
         );
+        if (!ok) return;
+        timeBlocks = timeBlocks.filter((b) => b.id !== block.id);
+        saveTimeBlocksToStorage();
+        renderTimelineForDate(currentTimelineDate);
       });
+
+      li.appendChild(colorBar);
+      li.appendChild(content);
+      li.appendChild(deleteBtn);
+
+      timeblockListEl.appendChild(li);
     });
   }
 
   function initTimeBlocks() {
     timeBlocks = loadTimeBlocksFromStorage();
-    setTimelineDate(currentSelectedDate); // 초기에는 달력 선택 날짜와 맞추기
+    setTimelineDate(currentSelectedDate);
 
     if (dayScreenDateButton) {
       dayScreenDateButton.addEventListener("click", () => {
@@ -942,27 +1128,27 @@ document.addEventListener("DOMContentLoaded", () => {
       });
     }
 
-    // 새 블록 추가 버튼 → 바텀시트
     if (openBlockSheetBtn) {
       openBlockSheetBtn.addEventListener("click", () => {
         openBottomSheet("timeblock", { date: currentTimelineDate });
       });
     }
 
-    // 타임테이블 초기화 버튼
     const clearTimelineBtn = document.querySelector(
       "[data-action='clear-timeline']"
     );
     if (clearTimelineBtn) {
       clearTimelineBtn.addEventListener("click", () => {
+        const ok = window.confirm(
+          "현재 날짜의 타임테이블을 모두 비울까요?"
+        );
+        if (!ok) return;
         timeBlocks = timeBlocks.filter((b) => b.date !== currentTimelineDate);
         saveTimeBlocksToStorage();
         renderTimelineForDate(currentTimelineDate);
-        alert("현재 날짜의 타임테이블을 비웠습니다.");
       });
     }
 
-    // 달력 일정 불러오기 버튼
     const importEventsBtn = document.querySelector(
       "[data-action='import-from-calendar']"
     );
@@ -1008,7 +1194,39 @@ document.addEventListener("DOMContentLoaded", () => {
         alert(`${createdCount}개의 일정을 타임테이블에 추가했어요.`);
       });
     }
+
+    if (exportImageBtn) {
+      exportImageBtn.addEventListener("click", () => {
+        if (!window.html2canvas) {
+          alert("이미지 저장 기능을 사용할 수 없어요 (html2canvas 미로딩).");
+          return;
+        }
+        const target = document.querySelector(".day-screen-left");
+        if (!target) {
+          alert("저장할 타임테이블을 찾지 못했어요.");
+          return;
+        }
+
+        window
+          .html2canvas(target, {
+            scale: 2,
+            backgroundColor: "#ffffff",
+          })
+          .then((canvas) => {
+            const link = document.createElement("a");
+            link.href = canvas.toDataURL("image/png");
+            link.download = `nemomemo_${currentTimelineDate}.png`;
+            link.click();
+          })
+          .catch((err) => {
+            console.error(err);
+            alert("이미지 저장 중 오류가 발생했어요.");
+          });
+      });
+    }
   }
+
+
 
   /* ============================================================
      바텀시트 submit → 일정/블록 실제 저장

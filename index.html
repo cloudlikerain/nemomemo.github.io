@@ -172,217 +172,71 @@
       <!-- 화면 2: 하루 타임테이블 -->
       <!-- ──────────────────────── -->
       <section
-        class="screen screen--day"
-        aria-label="하루 타임테이블 화면"
+        class="screen"
         data-screen="day"
         data-active="false"
+        style="display: none"
       >
-        <!-- 상단: 날짜 & 액션들 -->
         <header class="day-screen-header">
-          <div class="day-screen-header__top-row">
-            <h2 class="day-screen-title">오늘 타임테이블</h2>
+          <div class="day-screen-header__top">
             <button
-              class="day-screen-date-button"
               type="button"
-              aria-label="날짜 선택"
+              class="btn btn-text day-screen-date-button"
             >
               <span class="day-screen-date-label">2025년 12월 1일</span>
-              <span class="day-screen-date-chevron">▼</span>
             </button>
-          </div>
 
-          <div class="day-screen-header__actions">
-            <button
-              class="btn btn-outline btn-import-events"
-              type="button"
-              data-action="import-from-calendar"
-            >
-              달력 일정 불러오기
-            </button>
-            <button
-              class="btn btn-outline"
-              type="button"
-              data-action="open-timeblock-sheet"
-            >
-              새 블록 추가
-            </button>
-            <button
-              class="btn btn-text btn-clear-timeline"
-              type="button"
-              data-action="clear-timeline"
-            >
-              초기화
-            </button>
+            <div class="day-screen-header__actions">
+              <button
+                class="btn btn-outline btn-import-events"
+                type="button"
+                data-action="import-from-calendar"
+              >
+                달력 일정 불러오기
+              </button>
+              <button
+                class="btn btn-outline"
+                type="button"
+                data-action="open-timeblock-sheet"
+              >
+                새 블록 추가
+              </button>
+              <button
+                class="btn btn-text btn-clear-timeline"
+                type="button"
+                data-action="clear-timeline"
+              >
+                초기화
+              </button>
+              <button
+                class="btn btn-text"
+                type="button"
+                data-action="export-timetable-image"
+              >
+                이미지 저장
+              </button>
+            </div>
           </div>
         </header>
 
-        <!-- 중간: 세로 타임라인 -->
-        <section
-          class="timeline"
-          aria-label="시간별 계획"
-        >
-          <!-- 06:00 ~ 23:00까지 시간 줄 미리 생성 -->
-          <div class="timeline__hour-row" data-time="06:00">
-            <div class="timeline__hour-label">06:00</div>
-            <div class="timeline__blocks"></div>
-          </div>
-
-          <div class="timeline__hour-row" data-time="07:00">
-            <div class="timeline__hour-label">07:00</div>
-            <div class="timeline__blocks"></div>
-          </div>
-
-          <div class="timeline__hour-row" data-time="08:00">
-            <div class="timeline__hour-label">08:00</div>
-            <div class="timeline__blocks"></div>
-          </div>
-
-          <div class="timeline__hour-row" data-time="09:00">
-            <div class="timeline__hour-label">09:00</div>
-            <div class="timeline__blocks"></div>
-          </div>
-
-          <div class="timeline__hour-row" data-time="10:00">
-            <div class="timeline__hour-label">10:00</div>
-            <div class="timeline__blocks"></div>
-          </div>
-
-          <div class="timeline__hour-row" data-time="11:00">
-            <div class="timeline__hour-label">11:00</div>
-            <div class="timeline__blocks"></div>
-          </div>
-
-          <div class="timeline__hour-row" data-time="12:00">
-            <div class="timeline__hour-label">12:00</div>
-            <div class="timeline__blocks"></div>
-          </div>
-
-          <div class="timeline__hour-row" data-time="13:00">
-            <div class="timeline__hour-label">13:00</div>
-            <div class="timeline__blocks"></div>
-          </div>
-
-          <div class="timeline__hour-row" data-time="14:00">
-            <div class="timeline__hour-label">14:00</div>
-            <div class="timeline__blocks"></div>
-          </div>
-
-          <div class="timeline__hour-row" data-time="15:00">
-            <div class="timeline__hour-label">15:00</div>
-            <div class="timeline__blocks"></div>
-          </div>
-
-          <div class="timeline__hour-row" data-time="16:00">
-            <div class="timeline__hour-label">16:00</div>
-            <div class="timeline__blocks"></div>
-          </div>
-
-          <div class="timeline__hour-row" data-time="17:00">
-            <div class="timeline__hour-label">17:00</div>
-            <div class="timeline__blocks"></div>
-          </div>
-
-          <div class="timeline__hour-row" data-time="18:00">
-            <div class="timeline__hour-label">18:00</div>
-            <div class="timeline__blocks"></div>
-          </div>
-
-          <div class="timeline__hour-row" data-time="19:00">
-            <div class="timeline__hour-label">19:00</div>
-            <div class="timeline__blocks"></div>
-          </div>
-
-          <div class="timeline__hour-row" data-time="20:00">
-            <div class="timeline__hour-label">20:00</div>
-            <div class="timeline__blocks"></div>
-          </div>
-
-          <div class="timeline__hour-row" data-time="21:00">
-            <div class="timeline__hour-label">21:00</div>
-            <div class="timeline__blocks"></div>
-          </div>
-
-          <div class="timeline__hour-row" data-time="22:00">
-            <div class="timeline__hour-label">22:00</div>
-            <div class="timeline__blocks"></div>
-          </div>
-
-          <div class="timeline__hour-row" data-time="23:00">
-            <div class="timeline__hour-label">23:00</div>
-            <div class="timeline__blocks"></div>
-          </div>
-        </section>
-
-
-        <!-- 하단: 선택된 블록 상세 정보 -->
-        <section
-          class="time-block-detail"
-          aria-label="선택된 블록 상세"
-        >
-          <!-- 아무 블록도 선택 안 됐을 때 메시지 -->
-          <div class="time-block-detail__empty" data-state="empty">
-            아직 선택된 블록이 없어요.
-            타임라인을 눌러서 블록을 추가하거나 선택해보세요.
-          </div>
-
-          <!-- 블록이 선택되었을 때 보이는 영역 (초기에는 hidden 처리 예정) -->
-          <div class="time-block-detail__content" data-state="selected" hidden>
-            <header class="time-block-detail__header">
-              <h3 class="time-block-detail__title">
-                서글서글 회의
-              </h3>
-              <span class="time-block-detail__time-range">
-                14:00 ~ 16:00
-              </span>
-            </header>
-
-            <div class="time-block-detail__fields">
-              <!-- 나중에 인풋/텍스트에디트로 바꿀 수 있음 -->
-              <div class="time-block-detail__field">
-                <span class="time-block-detail__label">메모</span>
-                <p class="time-block-detail__value">
-                  회의 안건 정리하기
-                </p>
-              </div>
-            </div>
-
-            <div class="time-block-detail__actions">
-              <button
-                class="btn btn-outline"
-                type="button"
-                data-action="duplicate-block"
-              >
-                복제
-              </button>
-              <button
-                class="btn btn-outline"
-                type="button"
-                data-action="change-color"
-              >
-                색 변경
-              </button>
-              <button
-                class="btn btn-danger"
-                type="button"
-                data-action="delete-block"
-              >
-                삭제
-              </button>
+        <div class="day-screen-layout">
+          <!-- ⬅ 왼쪽: 5분 단위 타임테이블 -->
+          <div class="day-screen-left">
+            <div class="timetable" id="timetable">
+              <!-- JS에서 05~04 시간 라벨 + 블록을 grid로 채움 -->
             </div>
           </div>
-        </section>
 
-        <!-- (선택) 나중에 "이미지로 저장" 버튼도 여기 하단에 둘 수 있음 -->
-        <!--
-        <button
-          class="btn btn-primary btn-export-image"
-          type="button"
-          data-action="export-timetable-image"
-        >
-          이미지로 저장하기
-        </button>
-        -->
+          <!-- ➡ 오른쪽: 블록 목록 -->
+          <div class="day-screen-right">
+            <h2 class="day-screen-right__title">블록 목록</h2>
+            <ul class="timeblock-list">
+              <!-- JS에서 현재 날짜의 블록 목록을 채움 -->
+            </ul>
+          </div>
+        </div>
       </section>
+
 
       <!-- ──────────────────────── -->
       <!-- 화면 3: 투두 리스트 -->
@@ -577,6 +431,7 @@
                 type="time"
                 class="bottom-sheet__input bottom-sheet__input--start"
                 required
+                step="300"
               />
             </label>
           </div>
@@ -587,6 +442,7 @@
                 type="time"
                 class="bottom-sheet__input bottom-sheet__input--end"
                 required
+                step="300"
               />
             </label>
           </div>
@@ -696,7 +552,8 @@
       </form>
     </div>
   </div>
-
+  
+  <script src="js/html2canvas.min.js"></script>
   <!-- 나중에 JS로 SPA 로직 / 로컬 저장 붙이기 -->
   <script src="app.js"></script>
 
