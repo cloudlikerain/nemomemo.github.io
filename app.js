@@ -164,7 +164,8 @@ document.addEventListener("DOMContentLoaded", () => {
     const defaultStart = options.start || "10:00";
     const defaultEnd = options.end || "11:00";
     const defaultTitle = options.title || "";
-
+    const defaultMemo = options.memo || "";
+    
     sheetTitleInput.value = defaultTitle;
     sheetDateInput.value = defaultDate;
     sheetStartInput.value = defaultStart;
