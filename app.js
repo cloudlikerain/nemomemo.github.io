@@ -123,6 +123,9 @@ document.addEventListener("DOMContentLoaded", () => {
   );
   const sheetEndInput = document.querySelector(".bottom-sheet__input--end");
   const sheetMemoInput = document.querySelector(".bottom-sheet__input--memo");
+  const sheetMemoField = sheetMemoInput
+    ? sheetMemoInput.closest(".bottom-sheet__field")
+    : null;
 
   // 시간 인풋을 항상 5분 단위로 정리해주기
   if (sheetStartInput) {
@@ -157,6 +160,9 @@ document.addEventListener("DOMContentLoaded", () => {
   const sheetBlockIdInput = document.querySelector(
     ".bottom-sheet__input--block-id"
   );
+  const sheetTaskIdInput = document.querySelector(
+    ".bottom-sheet__input--task-id"
+  );
 
   function setSheetColorIndex(index) {
     if (!sheetColorIndexInput) return;
@@ -190,6 +196,37 @@ document.addEventListener("DOMContentLoaded", () => {
     const isEditEvent = mode === "edit-event";
     const isTimeblock = mode === "timeblock";
     const isEditTimeblock = mode === "edit-timeblock";
+    const isTask = mode === "task";
+    const isEditTask = mode === "edit-task";
+
+    const isTaskMode = isTask || isEditTask;
+
+    // 🔹 시간 필드 required 제어 (할 일은 시간 선택사항)
+    if (sheetStartInput) {
+      sheetStartInput.required = !isTaskMode;
+    }
+    if (sheetEndInput) {
+      sheetEndInput.required = !isTaskMode;
+    }
+
+    // 🔹 종료 시간 필드 숨기기 + 한 칸만 쓰는 레이아웃 적용
+    const timeRow = sheetStartInput
+      ? sheetStartInput.closest(".bottom-sheet__row")
+      : null;
+    const endField = sheetEndInput
+      ? sheetEndInput.closest(".bottom-sheet__field")
+      : null;
+
+    if (timeRow && endField) {
+      if (isTaskMode) {
+        timeRow.classList.add("bottom-sheet__row--single");
+        endField.style.display = "none";
+      } else {
+        timeRow.classList.remove("bottom-sheet__row--single");
+        endField.style.display = "";
+      }
+    }
+
     // 🔹 타이틀
     if (isNewEvent) {
       sheetTitleEl.textContent = "새 일정 추가";
@@ -199,6 +236,10 @@ document.addEventListener("DOMContentLoaded", () => {
       sheetTitleEl.textContent = "새 타임블록 추가";
     } else if (isEditTimeblock) {
       sheetTitleEl.textContent = "타임블록 수정";
+    } else if (isTask) {
+      sheetTitleEl.textContent = "새 할 일 추가";
+    } else if (isEditTask) {
+      sheetTitleEl.textContent = "할 일 수정";
     } else {
       sheetTitleEl.textContent = "입력";
     }
@@ -210,6 +251,11 @@ document.addEventListener("DOMContentLoaded", () => {
 
     if (sheetBlockIdInput) {
       sheetBlockIdInput.value = isEditTimeblock ? (options.blockId || "") : "";
+    }
+
+    // 🔹 taskId 세팅 (편집 모드일 때만)
+    if (sheetTaskIdInput) {
+      sheetTaskIdInput.value = isEditTask ? (options.taskId || "") : "";
     }
 
     // 🔹 기본값 채우기
@@ -232,10 +278,10 @@ document.addEventListener("DOMContentLoaded", () => {
       typeof options.colorIndex === "number" ? options.colorIndex : 0;
     setSheetColorIndex(defaultColorIndex);
 
-    // 🔹 삭제 버튼은 "일정 편집"일 때만 노출
+    // 🔹 삭제 버튼은 편집 모드일 때만 노출 (일정 / 타임블록 / 할 일)
     if (sheetDeleteBtn) {
       sheetDeleteBtn.style.display =
-        isEditEvent || isEditTimeblock ? "" : "none";
+        isEditEvent || isEditTimeblock || isEditTask ? "" : "none";
     }
 
     sheet.classList.add("bottom-sheet--visible");
@@ -274,8 +320,12 @@ document.addEventListener("DOMContentLoaded", () => {
   if (sheetDeleteBtn) {
     sheetDeleteBtn.addEventListener("click", () => {
       const mode = sheetModeInput.value;
-      if (mode !== "edit-event") {
-        // 편집 모드가 아니면 삭제 버튼은 안 씀
+      // 편집 모드가 아니면 삭제 안 함
+      if (
+        mode !== "edit-event" &&
+        mode !== "edit-timeblock" &&
+        mode !== "edit-task"
+      ) {
         return;
       }
       if (mode === "edit-event") {
@@ -302,8 +352,17 @@ document.addEventListener("DOMContentLoaded", () => {
         events = events.filter((item) => item.id !== targetId);
         saveEventsToStorage();
         setSelectedDate(currentSelectedDate);
+
+        // 🔹 일정 삭제 후에도 하루 탭/달력 상태 동기화
+        if (currentTimelineDate) {
+          renderTasksForDate(currentTimelineDate);
+          renderDayRightList(currentTimelineDate);
+        }
+        renderCalendar();
+
         closeBottomSheet();
         alert("일정을 삭제했습니다.");
+        
       } else if (mode === "edit-timeblock") {
         const blockId = sheetBlockIdInput ? sheetBlockIdInput.value : "";
         if (!blockId) return;
@@ -315,6 +374,51 @@ document.addEventListener("DOMContentLoaded", () => {
         saveTimeBlocksToStorage();
         setTimelineDate(currentTimelineDate);
         closeBottomSheet();
+      } else if (mode === "edit-task") {
+        // 🔹 할 일 삭제 로직 (todos에서 제거)
+        const taskId = sheetTaskIdInput ? sheetTaskIdInput.value : "";
+        if (!taskId) {
+          alert("삭제할 할 일을 찾을 수 없어요.");
+          return;
+        }
+
+        const target = todos.find((t) => t.id === taskId);
+        if (!target) {
+          alert("이미 삭제되었거나 찾을 수 없는 할 일입니다.");
+          closeBottomSheet();
+          return;
+        }
+
+        const ok = window.confirm(
+          `정말 이 할 일을 삭제할까요?\n\n제목: ${target.text}`
+        );
+        if (!ok) return;
+
+        todos = todos.filter((t) => t.id !== taskId);
+        saveTodosToStorage();
+
+        // 🔹 이 할 일이 속해 있던 날짜 (달력/하루 화면용)
+        const targetDate = target.dueDate || currentSelectedDate;
+
+        // 투두 탭 리스트 다시 그리기
+        if (typeof renderTodoLists === "function") {
+          renderTodoLists();
+        } else if (typeof renderTodoList === "function") {
+          renderTodoList();
+        }
+
+        // 하루 탭 "오늘의 할 일" 다시 그리기
+        if (currentTimelineDate) {
+          renderTasksForDate(currentTimelineDate);
+        }
+
+        // 🔹 달력 탭 & 하루 탭 오른쪽 리스트도 동기화
+        renderEventListForDate(targetDate);    // 달력 탭 오른쪽
+        renderDayRightList(targetDate);        // 하루 탭 오른쪽
+        renderCalendar();                      // 날짜 아래 점들
+
+        closeBottomSheet();
+        alert("할 일을 삭제했습니다.");
       }
     });
   }
@@ -346,6 +450,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const dayDetailDateLabel = document.querySelector(".day-detail__date-label");
   const addEventButton = document.querySelector(".day-detail__add-button");
   const addEventFab = document.querySelector(".fab--add-event");
+  const addTaskButton = document.querySelector(".day-detail__add-task-button");
 
   let events = [];
   let currentSelectedDate = TODAY;
@@ -444,14 +549,33 @@ document.addEventListener("DOMContentLoaded", () => {
     const todaysEvents = events
       .filter((ev) => ev.date === dateYMD)
       .sort((a, b) => a.startTime.localeCompare(b.startTime));
+      
+    // 🔹 해당 날짜의 "기한 있는 할 일" (deadline todo)
+    const todaysDeadlineTodos = Array.isArray(todos)
+      ? todos
+          .filter(
+            (t) =>
+              !t.done &&
+              t.type === "deadline" &&
+              t.dueDate === dateYMD
+          )
+          .sort((a, b) => {
+            // dueTime 기준으로 정렬 (없으면 뒤로)
+            if (!a.dueTime && !b.dueTime) return 0;
+            if (!a.dueTime) return 1;
+            if (!b.dueTime) return -1;
+            return a.dueTime.localeCompare(b.dueTime);
+          })
+      : [];
 
     if (dayDetailDateLabel) {
       dayDetailDateLabel.textContent = formatDateLabel(dateYMD);
     }
 
-    if (todaysEvents.length === 0) {
+    // 🔹 일정도 없고, 기한 있는 할 일도 없으면 공백 메시지
+    if (todaysEvents.length === 0 && todaysDeadlineTodos.length === 0) {
       const emptyLi = document.createElement("li");
-      emptyLi.textContent = "등록된 일정이 없어요.";
+      emptyLi.textContent = "등록된 일정이나 할 일이 없어요.";
       emptyLi.style.fontSize = "12px";
       emptyLi.style.color = "#777";
       eventListElement.appendChild(emptyLi);
@@ -527,6 +651,81 @@ document.addEventListener("DOMContentLoaded", () => {
         });
       });
     });
+
+    // 🔹 이어서 기한 있는 할 일 렌더
+    todaysDeadlineTodos.forEach((todo) => {
+      const li = document.createElement("li");
+      li.className = "event-list__item event-list__item--task";
+      li.dataset.todoId = todo.id;
+
+      const btn = document.createElement("button");
+      btn.className = "event-list__button event-list__button--task";
+      btn.type = "button";
+
+      const colorIndex =
+        typeof todo.colorIndex === "number" ? todo.colorIndex : 0;
+      const barColor =
+        EVENT_COLOR_PALETTE[colorIndex] || EVENT_COLOR_PALETTE[0];
+      const bgColor =
+        EVENT_COLOR_BG_PALETTE[colorIndex] || "rgba(0,0,0,0.03)"; // 🔹 추가
+
+      const colorBar = document.createElement("div");
+      colorBar.className = "event-list__color-bar";
+      colorBar.style.backgroundColor = barColor;
+
+      btn.style.backgroundColor = bgColor;
+      btn.style.borderColor = "transparent";
+
+      const timeDiv = document.createElement("div");
+      timeDiv.className = "event-list__time";
+
+      if (todo.dueTime) {
+        timeDiv.textContent = todo.dueTime;
+      } else {
+        timeDiv.textContent = ""; // 시간 없으면 비워두기 (기한만 있는 할 일)
+      }
+
+      const contentDiv = document.createElement("div");
+      contentDiv.className = "event-list__content";
+
+      const titleDiv = document.createElement("div");
+      titleDiv.className = "event-list__title";
+      titleDiv.textContent = todo.text;
+
+      const metaDiv = document.createElement("div");
+      metaDiv.className = "event-list__meta";
+
+      if (todo.memo && todo.memo.trim()) {
+        const memoSpan = document.createElement("span");
+        memoSpan.className =
+          "event-list__meta-item event-list__meta-item--memo";
+        memoSpan.textContent = todo.memo;
+        metaDiv.appendChild(memoSpan);
+      }
+
+      contentDiv.appendChild(titleDiv);
+      contentDiv.appendChild(metaDiv);
+
+      btn.appendChild(colorBar);
+      btn.appendChild(timeDiv);
+      btn.appendChild(contentDiv);
+      li.appendChild(btn);
+
+      eventListElement.appendChild(li);
+
+      // 🔹 클릭하면 "할 일 수정" 바텀시트 열기
+      btn.addEventListener("click", () => {
+        openBottomSheet("edit-task", {
+          taskId: todo.id,
+          date: todo.dueDate,
+          start: todo.dueTime || "",
+          title: todo.text,
+          memo: todo.memo || "",
+          colorIndex:
+            typeof todo.colorIndex === "number" ? todo.colorIndex : 0,
+        });
+      });
+    });
   }
 
   function makeDateMeta(dateObj) {
@@ -539,10 +738,10 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   function appendEventDotsToDayButton(btn, cellDate) {
-    const dayEvents = events.filter((ev) => ev.date === cellDate);
-    if (dayEvents.length === 0) return;
-
     const uniqueColorIndices = [];
+
+    // 🔹 cellDate 날짜의 이벤트들
+    const dayEvents = events.filter((ev) => ev.date === cellDate);
     dayEvents.forEach((ev) => {
       const idx =
         typeof ev.colorIndex === "number" ? ev.colorIndex : 0;
@@ -551,45 +750,28 @@ document.addEventListener("DOMContentLoaded", () => {
       }
     });
 
+    // 🔹 cellDate 날짜의 "기한 있는 할 일" (완료되지 않은 것만)
+    if (Array.isArray(todos)) {
+      const dayTodos = todos.filter(
+        (t) =>
+          !t.done &&
+          t.type === "deadline" &&
+          t.dueDate === cellDate
+      );
+      dayTodos.forEach((t) => {
+        const idx =
+          typeof t.colorIndex === "number" ? t.colorIndex : 0;
+        if (!uniqueColorIndices.includes(idx)) {
+          uniqueColorIndices.push(idx);
+        }
+      });
+    }
+
     if (uniqueColorIndices.length === 0) return;
 
     const dotsContainer = document.createElement("span");
     dotsContainer.className = "calendar-day__dots";
 
-    uniqueColorIndices.slice(0, 3).forEach((idx) => {
-      const dot = document.createElement("span");
-      dot.className = "calendar-day__dot";
-      const color =
-        EVENT_COLOR_PALETTE[idx] || EVENT_COLOR_PALETTE[0];
-      dot.style.backgroundColor = color;
-      dotsContainer.appendChild(dot);
-    });
-
-    btn.appendChild(dotsContainer);
-  }
-
-  function appendEventDotsToDayButton(btn, cellDate) {
-    // cellDate 날짜의 이벤트들
-    const dayEvents = events.filter((ev) => ev.date === cellDate);
-    if (dayEvents.length === 0) return;
-
-    // 색상 인덱스 중복 제거
-    const uniqueColorIndices = [];
-    dayEvents.forEach((ev) => {
-      const idx =
-        typeof ev.colorIndex === "number" ? ev.colorIndex : 0;
-      if (!uniqueColorIndices.includes(idx)) {
-        uniqueColorIndices.push(idx);
-      }
-    });
-
-    if (uniqueColorIndices.length === 0) return;
-
-    // 점 컨테이너 생성
-    const dotsContainer = document.createElement("span");
-    dotsContainer.className = "calendar-day__dots";
-
-    // 최대 3개까지만 표시
     uniqueColorIndices.slice(0, 3).forEach((idx) => {
       const dot = document.createElement("span");
       dot.className = "calendar-day__dot";
@@ -687,8 +869,6 @@ document.addEventListener("DOMContentLoaded", () => {
       appendEventDotsToDayButton(btn, cellDate);
 
       btn.setAttribute("aria-label", labelText);
-
-      appendEventDotsToDayButton(btn, cellDate);
 
       btn.addEventListener("click", () => {
         setSelectedDate(cellDate);
@@ -806,6 +986,15 @@ document.addEventListener("DOMContentLoaded", () => {
         openBottomSheet("event", { date: currentSelectedDate });
       });
     }
+    // 새 할 일 추가 버튼 → 기한 있는 할 일 바텀시트
+    if (addTaskButton) {
+      addTaskButton.addEventListener("click", () => {
+        openBottomSheet("task", {
+          date: currentSelectedDate, // 기한 날짜
+          start: "",                 // 시간은 선택 사항 (입력 안 해도 됨)
+        });
+      });
+    }
 
     // 월/주 변경 버튼
     if (prevMonthBtn) {
@@ -896,6 +1085,7 @@ document.addEventListener("DOMContentLoaded", () => {
      TimeBlock 모듈 (하루 타임테이블 – 05~다음날04, 5분×12칸 가로바)
   ============================================================ */
   const TIMEBLOCK_STORAGE_KEY = "nemomemo_timeblocks_v1";
+  const DAY_SETTINGS_STORAGE_KEY = "nemomemo_day_settings_v1"; // 🔹 날짜별 기상/수면 저장 키
 
   // 하루 탭 DOM
   const timetableEl = document.querySelector("#timetable");
@@ -909,15 +1099,27 @@ document.addEventListener("DOMContentLoaded", () => {
   );
   const timeblockListEl = document.querySelector(".timeblock-list");
 
+  // 🔹 기상/수면 입력 DOM
+  const wakeInput = document.querySelector(".day-sleep-input--wake");
+  const sleepInput = document.querySelector(".day-sleep-input--sleep");
+
   let timeBlocks = [];
   let currentTimelineDate = TODAY;
   let timeBlockIdCounter = 1;
 
+  // 🔹 날짜별 기상/수면 설정
+  let daySettings = {};
+
+  // 기본 기상/수면 시간
+  const DEFAULT_WAKE_TIME = "07:00";
+  const DEFAULT_SLEEP_TIME = "01:00";
+
   // 하루 범위: 05:00 ~ 다음날 04:59
   const DAY_START_HOUR = 5;
   const DAY_TOTAL_HOURS = 24;
-  const SLOT_MINUTES = 5;         // 5분
-  const SLOTS_PER_HOUR = 60 / SLOT_MINUTES; // 12
+  const SLOT_MINUTES = 5;
+  const SLOTS_PER_HOUR = 60 / SLOT_MINUTES;
+
 
   function loadTimeBlocksFromStorage() {
     try {
@@ -940,6 +1142,108 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   }
 
+  // 🔹 날짜별 기상/수면 설정 로딩/저장
+  function loadDaySettingsFromStorage() {
+    try {
+      const raw = localStorage.getItem(DAY_SETTINGS_STORAGE_KEY);
+      if (!raw) return {};
+      const parsed = JSON.parse(raw);
+      if (parsed && typeof parsed === "object") {
+        return parsed;
+      }
+      return {};
+    } catch (e) {
+      console.warn("⚠️ 기상/수면 설정 로딩 중 오류 (초기화):", e);
+      return {};
+    }
+  }
+
+  function saveDaySettingsToStorage() {
+    try {
+      localStorage.setItem(
+        DAY_SETTINGS_STORAGE_KEY,
+        JSON.stringify(daySettings)
+      );
+    } catch (e) {
+      console.warn("⚠️ 기상/수면 설정 저장 중 오류:", e);
+    }
+  }
+
+  // 🔹 특정 날짜 설정 가져오기 (없으면 기본값)
+  function getDaySettingsForDate(dateYMD) {
+    const s = daySettings[dateYMD] || {};
+    return {
+      wakeTime: s.wakeTime || DEFAULT_WAKE_TIME,
+      sleepTime: s.sleepTime || DEFAULT_SLEEP_TIME,
+    };
+  }
+
+  // 🔹 특정 날짜 설정 업데이트
+  function updateDaySettingsForDate(dateYMD, partial) {
+    const prev = daySettings[dateYMD] || {};
+    daySettings[dateYMD] = { ...prev, ...partial };
+    saveDaySettingsToStorage();
+  }
+
+  // 🔹 현재 날짜 설정을 인풋에 반영
+  function applyDaySettingsToInputs(dateYMD) {
+    if (!wakeInput || !sleepInput) return;
+    const { wakeTime, sleepTime } = getDaySettingsForDate(dateYMD);
+    wakeInput.value = wakeTime;
+    sleepInput.value = sleepTime;
+  }
+
+  // 🔹 날짜별 기상/수면 설정 로딩/저장
+  function loadDaySettingsFromStorage() {
+    try {
+      const raw = localStorage.getItem(DAY_SETTINGS_STORAGE_KEY);
+      if (!raw) return {};
+      const parsed = JSON.parse(raw);
+      if (parsed && typeof parsed === "object") {
+        return parsed;
+      }
+      return {};
+    } catch (e) {
+      console.warn("⚠️ 기상/수면 설정 로딩 중 오류 (초기화):", e);
+      return {};
+    }
+  }
+
+  function saveDaySettingsToStorage() {
+    try {
+      localStorage.setItem(
+        DAY_SETTINGS_STORAGE_KEY,
+        JSON.stringify(daySettings)
+      );
+    } catch (e) {
+      console.warn("⚠️ 기상/수면 설정 저장 중 오류:", e);
+    }
+  }
+
+  // 🔹 특정 날짜의 설정 가져오기 (없으면 기본값 사용)
+  function getDaySettingsForDate(dateYMD) {
+    const s = daySettings[dateYMD] || {};
+    return {
+      wakeTime: s.wakeTime || DEFAULT_WAKE_TIME,
+      sleepTime: s.sleepTime || DEFAULT_SLEEP_TIME,
+    };
+  }
+
+  // 🔹 특정 날짜의 설정 업데이트
+  function updateDaySettingsForDate(dateYMD, partial) {
+    const prev = daySettings[dateYMD] || {};
+    daySettings[dateYMD] = { ...prev, ...partial };
+    saveDaySettingsToStorage();
+  }
+
+  // 🔹 인풋에 현재 날짜 설정 반영
+  function applyDaySettingsToInputs(dateYMD) {
+    if (!wakeInput || !sleepInput) return;
+    const { wakeTime, sleepTime } = getDaySettingsForDate(dateYMD);
+    wakeInput.value = wakeTime;
+    sleepInput.value = sleepTime;
+  }
+
   function getNextTimeBlockId() {
     const currentMax = timeBlocks.reduce((max, b) => {
       if (typeof b.id === "string" && b.id.startsWith("timeblock-")) {
@@ -958,7 +1262,9 @@ document.addEventListener("DOMContentLoaded", () => {
     if (dayScreenDateLabel) {
       dayScreenDateLabel.textContent = formatDateLabel(ymd);
     }
-    renderTimelineForDate(ymd);
+    applyDaySettingsToInputs(ymd);   // 🔹 입력칸에 기상/수면 시간 반영
+    renderTimelineForDate(ymd);      // 🔹 해당 설정 기반으로 타임테이블 렌더
+    renderDayRightList(ymd);
   }
 
   // "HH:MM" → 05:00 기준 offset 분(0~1439)
@@ -1023,6 +1329,11 @@ document.addEventListener("DOMContentLoaded", () => {
     if (!timetableEl) return;
     timetableEl.innerHTML = "";
 
+    // 🔹 현재 날짜의 기상/수면 offset 계산
+    const { wakeTime, sleepTime } = getDaySettingsForDate(dateYMD);
+    const wakeOffset = timeToOffsetMinutes(wakeTime);
+    const sleepOffset = timeToOffsetMinutes(sleepTime);
+
     // 24시간(행) 뼈대 만들기: 05, 06, ..., 23, 00, 01, 02, 03, 04
     const rows = [];
     for (let hourIndex = 0; hourIndex < DAY_TOTAL_HOURS; hourIndex++) {
@@ -1042,6 +1353,20 @@ document.addEventListener("DOMContentLoaded", () => {
       for (let i = 0; i < SLOTS_PER_HOUR; i++) {
         const cell = document.createElement("div");
         cell.className = "timetable-cell";
+
+        // 🔹 이 칸이 담당하는 시간(5분 단위)의 중심 offset 계산
+        const slotStartOffset = hourIndex * 60 + i * SLOT_MINUTES;
+        const slotEndOffset = slotStartOffset + SLOT_MINUTES;
+        const slotCenterOffset = (slotStartOffset + slotEndOffset) / 2;
+
+        const isBeforeWake = slotCenterOffset < wakeOffset;
+        const isAfterSleep = slotCenterOffset >= sleepOffset;
+
+        // 🔹 기상 이전/수면 이후 구간이면 진한 회색 칸으로 표시
+        if (isBeforeWake || isAfterSleep) {
+          cell.classList.add("timetable-cell--sleep");
+        }
+
         grid.appendChild(cell);
       }
 
@@ -1109,21 +1434,30 @@ document.addEventListener("DOMContentLoaded", () => {
 
         // 위치
         blockEl.style.gridColumn = `${startSlot + 1} / ${endSlot + 1}`;
-        blockEl.style.gridRow = "1 / 2"; // 혹시 없으면 1줄 고정
-        
+        blockEl.style.gridRow = "1 / 2";
+
         const colorIndex = getBlockColorIndex(block);
         const borderColor =
           EVENT_COLOR_PALETTE[colorIndex] || EVENT_COLOR_PALETTE[0];
         const bgColor =
           EVENT_COLOR_BG_PALETTE[colorIndex] || "rgba(0,0,0,0.05)";
 
-        // 🔹 테두리 = 일정 색
+        // 🔹 타임블록은 항상 자신의 색 유지
         blockEl.style.borderLeft = `2px solid ${baseColor}`;
         blockEl.style.borderRight = `2px solid ${baseColor}`;
-
-        // 🔹 배경 = 옅은 색 (투명도)
-        blockEl.style.backgroundColor = bgColor; // 🔹 배경만 옅게
-        // blockEl.style.opacity = "0.25";      // ❌ 이건 이제 없음
+        blockEl.style.backgroundColor = bgColor;
+        
+        // 🔹 클릭 시 해당 타임블록 편집 바텀시트 열기
+        blockEl.addEventListener("click", () => {
+          openBottomSheet("edit-timeblock", {
+            blockId: block.id,
+            date: block.date,
+            start: block.start,
+            end: block.end,
+            title: block.title,
+            colorIndex: getBlockColorIndex(block),
+          });
+        });
 
         // 🔹 글자색 = 진하게 (회색 상속 방지)
         blockEl.style.color = "#111827";
@@ -1131,61 +1465,145 @@ document.addEventListener("DOMContentLoaded", () => {
         rowGrid.appendChild(blockEl);
       }
     });
-
-    renderTimeblockList(todaysBlocks);
   }
 
   // 오른쪽: 블록 목록
-  function renderTimeblockList(blocksForDate) {
-    if (!timeblockListEl) return;
-    timeblockListEl.innerHTML = "";
+  function renderDayRightList(dateYMD) {
+    const listEl = document.querySelector(".day-right-list");
+    const emptyEl = document.querySelector(".day-right-empty");
+    if (!listEl || !emptyEl) return;
 
-    if (blocksForDate.length === 0) {
-      const li = document.createElement("li");
-      li.className = "timeblock-list__item";
-      li.textContent = "등록된 블록이 없어요.";
-      li.style.fontSize = "11px";
-      li.style.color = "#6b7280";
-      timeblockListEl.appendChild(li);
+    listEl.innerHTML = "";
+
+    // 🔹1) 타임블록
+    const blocks = timeBlocks.filter((b) => b.date === dateYMD);
+
+    // 🔹2) 기한 있는 할 일
+    const tasks = todos.filter(
+      (t) =>
+        t.type === "deadline" &&
+        t.dueDate === dateYMD &&
+        !t.done
+    );
+
+    // 🔹 합치기
+    const combined = [
+      ...blocks.map((b) => ({ kind: "block", data: b })),
+      ...tasks.map((t) => ({ kind: "task", data: t })),
+    ];
+
+    if (combined.length === 0) {
+      emptyEl.style.display = "";
       return;
     }
+    emptyEl.style.display = "none";
 
-    blocksForDate.forEach((block) => {
-      const li = document.createElement("li");
-      li.className = "timeblock-list__item";
-      li.dataset.blockId = block.id;
+      combined.forEach((item) => {
+        if (item.kind === "block") {
+          // ✅ 타임블록(일정)용 디자인 ------------------------
+          const block = item.data;
 
-      const colorIndex = getBlockColorIndex(block);
-      const color =
-        EVENT_COLOR_PALETTE[colorIndex] || EVENT_COLOR_PALETTE[0];
+          const li = document.createElement("li");
+          li.className = "timeblock-list__item";      // ✔ 기존 타임블록 클래스 그대로 사용
+          li.dataset.blockId = block.id;
 
-      const colorBar = document.createElement("div");
-      colorBar.className = "timeblock-list__color-bar";
-      colorBar.style.backgroundColor = color;
+          const colorIndex = getBlockColorIndex(block);
+          const color =
+            EVENT_COLOR_PALETTE[colorIndex] || EVENT_COLOR_PALETTE[0];
 
-      const content = document.createElement("div");
-      content.className = "timeblock-list__content";
+          const colorBar = document.createElement("div");
+          colorBar.className = "timeblock-list__color-bar";
+          colorBar.style.backgroundColor = color;
 
-      const titleEl = document.createElement("div");
-      titleEl.className = "timeblock-list__title";
-      titleEl.textContent = block.title;
+          const content = document.createElement("div");
+          content.className = "timeblock-list__content";
 
-      const timeEl = document.createElement("div");
-      timeEl.className = "timeblock-list__time";
-      timeEl.textContent = `${block.start} ~ ${block.end}`;
+          const titleEl = document.createElement("div");
+          titleEl.className = "timeblock-list__title";
+          titleEl.textContent = block.title;
 
-      content.appendChild(titleEl);
-      content.appendChild(timeEl);
+          const timeEl = document.createElement("div");
+          timeEl.className = "timeblock-list__time-range";
+          timeEl.textContent = `${block.start} ~ ${block.end}`;
 
-      li.appendChild(colorBar);
-      li.appendChild(content);
+          content.appendChild(titleEl);
+          content.appendChild(timeEl);
 
-      timeblockListEl.appendChild(li);
+          li.appendChild(colorBar);
+          li.appendChild(content);
+
+          li.addEventListener("click", () => {
+            openBottomSheet("edit-timeblock", {
+              blockId: block.id,
+              date: block.date,
+              start: block.start,
+              end: block.end,
+              title: block.title,
+              colorIndex,
+            });
+          });
+
+          listEl.appendChild(li);
+        } else if (item.kind === "task") {
+          // ✅ 할 일용 디자인 ------------------------
+          const todo = item.data;
+
+          const li = document.createElement("li");
+          li.className = "day-task-item";           // ✔ 할 일 전용 클래스
+          li.dataset.todoId = todo.id;
+
+          const colorIndex =
+            typeof todo.colorIndex === "number" ? todo.colorIndex : 0;
+          const barColor =
+            EVENT_COLOR_PALETTE[colorIndex] || EVENT_COLOR_PALETTE[0];
+          const bgColor =
+            EVENT_COLOR_BG_PALETTE[colorIndex] || "rgba(0,0,0,0.05)";
+
+          li.style.backgroundColor = bgColor;
+
+          const bar = document.createElement("div");
+          bar.className = "day-task-item__colorbar";
+          bar.style.backgroundColor = barColor;
+
+          const content = document.createElement("div");
+          content.className = "day-task-item__content";
+
+          const titleEl = document.createElement("div");
+          titleEl.className = "day-task-item__title";
+          titleEl.textContent = todo.text;
+
+          const metaEl = document.createElement("div");
+          metaEl.className = "day-task-item__meta";
+          metaEl.textContent = todo.dueTime || "종일";
+
+          content.appendChild(titleEl);
+          content.appendChild(metaEl);
+
+          li.appendChild(bar);
+          li.appendChild(content);
+
+          li.addEventListener("click", () => {
+            openBottomSheet("edit-task", {
+              taskId: todo.id,
+              date: todo.dueDate,
+              start: todo.dueTime || "",
+              title: todo.text,
+              memo: todo.memo || "",
+              colorIndex,
+            });
+          });
+
+          listEl.appendChild(li);
+        }
     });
   }
 
+
   function initTimeBlocks() {
     timeBlocks = loadTimeBlocksFromStorage();
+    daySettings = loadDaySettingsFromStorage(); // 🔹 날짜 설정 로드
+
+    // 🔹 초기 날짜(오늘 또는 선택된 날짜)의 인풋/타임테이블 반영
     setTimelineDate(currentSelectedDate);
 
     if (dayScreenDateButton) {
@@ -1200,6 +1618,25 @@ document.addEventListener("DOMContentLoaded", () => {
       });
     }
 
+    // 🔹 기상/수면 인풋 변경 시 저장 + 현재 날짜 전체 다시 렌더
+    if (wakeInput) {
+      wakeInput.addEventListener("change", () => {
+        if (!currentTimelineDate) return;
+        const value = wakeInput.value || DEFAULT_WAKE_TIME;
+        updateDaySettingsForDate(currentTimelineDate, { wakeTime: value });
+        setTimelineDate(currentTimelineDate);  // ⭐ 타임라인 + 오른쪽 리스트까지 한 번에 다시 그림
+      });
+    }
+
+    if (sleepInput) {
+      sleepInput.addEventListener("change", () => {
+        if (!currentTimelineDate) return;
+        const value = sleepInput.value || DEFAULT_SLEEP_TIME;
+        updateDaySettingsForDate(currentTimelineDate, { sleepTime: value });
+        setTimelineDate(currentTimelineDate);  // ⭐ 마찬가지
+      });
+    }
+    
     const clearTimelineBtn = document.querySelector(
       "[data-action='clear-timeline']"
     );
@@ -1289,7 +1726,7 @@ document.addEventListener("DOMContentLoaded", () => {
           );
           return;
         }
-        const target = document.querySelector(".day-screen-left");
+        const target = document.querySelector("#timetable");
         if (!target) {
           alert("저장할 타임테이블을 찾지 못했어요.");
           return;
@@ -1320,25 +1757,104 @@ document.addEventListener("DOMContentLoaded", () => {
   if (sheetForm) {
     sheetForm.addEventListener("submit", (e) => {
       e.preventDefault();
+      if (!sheetModeInput || !sheetTitleInput) return;
 
       const mode = sheetModeInput.value;
+
       const title = sheetTitleInput.value.trim();
-      const date = sheetDateInput.value || TODAY;
+      const date = sheetDateInput && sheetDateInput.value
+        ? sheetDateInput.value
+        : TODAY;
 
-      const rawStart = sheetStartInput.value;
-      const rawEnd = sheetEndInput.value;
+      const rawStart = sheetStartInput ? sheetStartInput.value : "";
+      const rawEnd = sheetEndInput ? sheetEndInput.value : "";
+      const memo = sheetMemoInput ? sheetMemoInput.value.trim() : "";
 
-      // 🔹 5분 단위로 강제 스냅
+      // 공통 색상 index 파싱
+      let colorIndex = 0;
+      if (sheetColorIndexInput) {
+        const raw = parseInt(sheetColorIndexInput.value || "0", 10);
+        if (!isNaN(raw) && raw >= 0 && raw < EVENT_COLOR_PALETTE.length) {
+          colorIndex = raw;
+        }
+      }
+
+      /* -------------------------
+         1) 할 일(Task) 모드
+         - mode: "task" / "edit-task"
+         - 기한 있는 할 일: date 필수, 시간은 선택 (start만 사용)
+      ------------------------- */
+      if (mode === "task" || mode === "edit-task") {
+        if (!title) {
+          alert("할 일의 제목을 입력해 주세요.");
+          return;
+        }
+
+        // 기한 있는 할 일만 바텀시트로 만든다고 가정 (date 필수)
+        if (!sheetDateInput || !sheetDateInput.value) {
+          alert("기한 있는 할 일의 날짜를 선택해 주세요.");
+          return;
+        }
+
+        const dueDate = sheetDateInput.value;
+        const dueTime = rawStart ? snapTimeTo5Minutes(rawStart) : null;
+
+        let targetId = sheetTaskIdInput ? sheetTaskIdInput.value : "";
+
+        if (mode === "task") {
+          // 새 할 일 (기한 있는 할 일)
+          const newTodo = {
+            id: getNextTodoId(),
+            text: title,
+            done: false,
+            source: "calendar", // 달력/하루에서 만든 할 일
+            type: "deadline",
+            dueDate,
+            dueTime,
+            colorIndex,
+            memo,
+          };
+          todos.push(newTodo);
+        } else {
+          // 기존 할 일 수정
+          if (!targetId) {
+            alert("수정할 할 일을 찾을 수 없어요.");
+            return;
+          }
+          const todo = todos.find((t) => t.id === targetId);
+          if (!todo) {
+            alert("이미 삭제되었거나 찾을 수 없는 할 일입니다.");
+            return;
+          }
+          todo.text = title;
+          todo.type = "deadline";
+          todo.dueDate = dueDate;
+          todo.dueTime = dueTime;
+          todo.colorIndex = colorIndex;
+          todo.memo = memo;
+        }
+
+        saveTodosToStorage();
+        if (typeof renderTodoLists === "function") {
+          renderTodoLists();
+        }
+        // 🔹 캘린더/오른쪽 리스트도 즉시 반영
+        setSelectedDate(dueDate);
+        closeBottomSheet();
+        alert("할 일을 저장했습니다.");
+        return;
+      }
+
+      /* -------------------------
+         2) 기존 event / timeblock 모드
+      ------------------------- */
       const start = snapTimeTo5Minutes(rawStart);
       const end = snapTimeTo5Minutes(rawEnd);
 
-      // 인풋에도 반영
-      sheetStartInput.value = start;
-      sheetEndInput.value = end;
+      if (sheetStartInput) sheetStartInput.value = start;
+      if (sheetEndInput) sheetEndInput.value = end;
 
-      const memo = sheetMemoInput ? sheetMemoInput.value.trim() : "";
-
-      // start >= end인 경우 방어
+      // start >= end인 경우 방어 (event / timeblock 에만 적용)
       if (start >= end) {
         alert("시작 시간이 종료 시간보다 같거나 늦을 수는 없어요.");
         return;
@@ -1347,19 +1863,6 @@ document.addEventListener("DOMContentLoaded", () => {
       if (!title || !date || !start || !end) {
         alert("모든 값을 입력해주세요.");
         return;
-      }
-
-      // 공통: 색상 인덱스
-      let colorIndex = 0;
-      if (sheetColorIndexInput) {
-        const raw = parseInt(sheetColorIndexInput.value || "0", 10);
-        if (
-          !isNaN(raw) &&
-          raw >= 0 &&
-          raw < EVENT_COLOR_PALETTE.length
-        ) {
-          colorIndex = raw;
-        }
       }
 
       if (mode === "event") {
@@ -1380,30 +1883,29 @@ document.addEventListener("DOMContentLoaded", () => {
         alert("일정이 추가되었습니다.");
       } else if (mode === "edit-event") {
         // ✅ 기존 일정 수정
-        const targetId = sheetEventIdInput
-          ? sheetEventIdInput.value
-          : "";
-
-        const ev = events.find((item) => item.id === targetId);
-        if (!ev) {
-          alert("수정할 일정을 찾을 수 없어요. 다시 시도해 주세요.");
-          closeBottomSheet();
+        const targetId = sheetEventIdInput ? sheetEventIdInput.value : "";
+        if (!targetId) {
+          alert("수정할 일정을 찾을 수 없어요.");
           return;
         }
-
-        ev.title = title;
-        ev.date = date;
-        ev.startTime = start;
-        ev.endTime = end;
-        ev.colorIndex = colorIndex;
-        ev.memo = memo;
+        const event = events.find((item) => item.id === targetId);
+        if (!event) {
+          alert("이미 삭제되었거나 찾을 수 없는 일정입니다.");
+          return;
+        }
+        event.title = title;
+        event.date = date;
+        event.startTime = start;
+        event.endTime = end;
+        event.memo = memo;
+        event.colorIndex = colorIndex;
 
         saveEventsToStorage();
-        setSelectedDate(date);
-        alert("일정이 수정되었습니다.");
+        setSelectedDate(event.date);
+        alert("일정을 수정했습니다.");
       } else if (mode === "timeblock") {
-        // 시간 겹침 검사
-        if (hasOverlapTimeBlock(date, start, end)) {
+        // ✅ 새 타임블록
+        if (hasOverlapTimeBlock(date, start, end, null)) {
           alert("해당 시간대에 이미 블록이 있어요. 겹치지 않게 조정해 주세요.");
           return;
         }
@@ -1415,7 +1917,7 @@ document.addEventListener("DOMContentLoaded", () => {
           end,
           title,
           sourceEventId: null,
-          colorIndex, // 🔹 바텀시트에서 고른 색
+          colorIndex,
         };
         timeBlocks.push(block);
         saveTimeBlocksToStorage();
@@ -1429,7 +1931,6 @@ document.addEventListener("DOMContentLoaded", () => {
           return;
         }
 
-        // 겹침 방어 (자기 자신 제외)
         if (hasOverlapTimeBlock(date, start, end, blockId)) {
           alert("해당 시간대에 이미 다른 블록이 있어요.");
           return;
@@ -1442,10 +1943,10 @@ document.addEventListener("DOMContentLoaded", () => {
         block.colorIndex = colorIndex;
 
         saveTimeBlocksToStorage();
-        setTimelineDate(date);
-        alert("타임블록이 수정되었습니다.");
+        setTimelineDate(block.date);
+        alert("타임블록을 수정했습니다.");
       }
-      
+
       closeBottomSheet();
     });
   }
@@ -1455,10 +1956,27 @@ document.addEventListener("DOMContentLoaded", () => {
   ============================================================ */
   const TODO_STORAGE_KEY = "nemomemo_todos_v1";
 
-  const todoListElement = document.querySelector(".todo-list");
-  const todoEmptyMessage = document.querySelector(".todo-empty-message");
+  // 리스트 3개 (기한 없는 / 기한 있는 / 완료된 할 일)
+  const todoNodueListElement = document.querySelector(".todo-list--nodue");
+  const todoDeadlineListElement = document.querySelector(".todo-list--deadline");
+  const todoDoneListElement = document.querySelector(".todo-list--done");
+
+  // 섹션별 빈 상태 메시지
+  const todoEmptyNodueMessage = document.querySelector(
+    ".todo-empty-message--nodue"
+  );
+  const todoEmptyDeadlineMessage = document.querySelector(
+    ".todo-empty-message--deadline"
+  );
+  const todoEmptyDoneMessage = document.querySelector(
+    ".todo-empty-message--done"
+  );
+
+  // 하단 입력 바 (이미 CSS/JS는 있는데, HTML에서 나중에 붙일 예정)
   const todoInputForm = document.querySelector(".todo-input-bar__form");
   const todoInput = document.querySelector(".todo-input");
+
+  // 외부에서 불러오기 버튼들
   const importTodoFromCalendarBtn = document.querySelector(
     "[data-action='import-todo-from-calendar']"
   );
@@ -1466,8 +1984,10 @@ document.addEventListener("DOMContentLoaded", () => {
     "[data-action='import-todo-from-timeline']"
   );
 
+  // 할 일 데이터
   let todos = [];
   let todoIdCounter = 1;
+
 
   function loadTodosFromStorage() {
     try {
@@ -1475,12 +1995,36 @@ document.addEventListener("DOMContentLoaded", () => {
       if (!raw) return [];
       const parsed = JSON.parse(raw);
       if (!Array.isArray(parsed)) return [];
-      return parsed;
+
+      return parsed.map((item) => {
+        const todo = { ...item };
+        if (typeof todo.done !== "boolean") {
+          todo.done = false;
+        }
+        // 예전 데이터에는 type / dueDate / dueTime / colorIndex / memo가 없을 수 있음
+        if (!todo.type) {
+          todo.type = "nodue"; // 기존 순수 텍스트 투두는 기한 없는 할 일로 처리
+        }
+        if (typeof todo.dueDate === "undefined") {
+          todo.dueDate = null;
+        }
+        if (typeof todo.dueTime === "undefined") {
+          todo.dueTime = null;
+        }
+        if (typeof todo.colorIndex !== "number") {
+          todo.colorIndex = 0;
+        }
+        if (typeof todo.memo !== "string") {
+          todo.memo = "";
+        }
+        return todo;
+      });
     } catch (e) {
       console.warn("⚠️ 투두 로딩 중 오류 (초기화):", e);
       return [];
     }
   }
+
 
   function saveTodosToStorage() {
     try {
@@ -1503,12 +2047,6 @@ document.addEventListener("DOMContentLoaded", () => {
     return id;
   }
 
-  function updateTodoEmptyState() {
-    if (!todoEmptyMessage || !todoListElement) return;
-    const hasItems = todos.length > 0;
-    todoEmptyMessage.hidden = hasItems;
-  }
-
   function createTodoElement(todo) {
     const li = document.createElement("li");
     li.className = "todo-item";
@@ -1516,6 +2054,19 @@ document.addEventListener("DOMContentLoaded", () => {
     li.dataset.done = todo.done ? "true" : "false";
     if (todo.done) {
       li.classList.add("todo-item--done");
+    }
+
+    // 🔹 기한 있는 할 일은 색 배경/테두리 적용
+    const colorIndex =
+      typeof todo.colorIndex === "number" ? todo.colorIndex : 0;
+    const bgColor =
+      EVENT_COLOR_BG_PALETTE[colorIndex] || "rgba(0,0,0,0.03)";
+    const borderColor =
+      EVENT_COLOR_PALETTE[colorIndex] || "#eee";
+ 
+    if (todo.type === "deadline" && !todo.done) {
+      li.style.backgroundColor = bgColor;
+      li.style.borderColor = borderColor;
     }
 
     const label = document.createElement("label");
@@ -1567,46 +2118,204 @@ document.addEventListener("DOMContentLoaded", () => {
     checkbox.addEventListener("change", () => {
       const done = checkbox.checked;
       todo.done = done;
-      li.dataset.done = done ? "true" : "false";
-      if (done) {
-        li.classList.add("todo-item--done");
-      } else {
-        li.classList.remove("todo-item--done");
-      }
       saveTodosToStorage();
+      renderTodoLists();
     });
 
     deleteButton.addEventListener("click", () => {
       todos = todos.filter((t) => t.id !== todo.id);
-      li.remove();
       saveTodosToStorage();
-      updateTodoEmptyState();
+      renderTodoLists();
     });
 
     return li;
   }
 
-  function renderTodoList() {
-    if (!todoListElement) return;
-    todoListElement.innerHTML = "";
-    todos.forEach((todo) => {
-      const el = createTodoElement(todo);
-      todoListElement.appendChild(el);
+  // 기한 있는 할 일을 dueDate / dueTime 기준으로 정렬하는 헬퍼
+  function compareDeadlineTodo(a, b) {
+    // 둘 다 날짜 없으면 순서 유지
+    if (!a.dueDate && !b.dueDate) return 0;
+    if (!a.dueDate) return 1;
+    if (!b.dueDate) return -1;
+
+    if (a.dueDate === b.dueDate) {
+      // 같은 날이면 시간 있는 것 우선
+      if (!a.dueTime && !b.dueTime) return 0;
+      if (!a.dueTime) return 1;
+      if (!b.dueTime) return -1;
+      return a.dueTime.localeCompare(b.dueTime);
+    }
+
+    return a.dueDate.localeCompare(b.dueDate);
+  }
+  /* ============================================================
+    하루 탭: 기한 있는 할 일 렌더링
+  ============================================================ */
+
+  function renderTasksForDate(dateYMD) {
+    const listEl = document.querySelector(".day-task-list");
+    const emptyEl = document.querySelector(".day-task-empty");
+    if (!listEl || !emptyEl) return;
+
+    listEl.innerHTML = "";
+
+    // 🔹 오늘 날짜의 기한 있는 할 일 필터링
+    const todaysTasks = todos.filter(
+      (t) =>
+        t.type === "deadline" &&
+        t.dueDate === dateYMD &&
+        !t.done
+    );
+
+    if (todaysTasks.length === 0) {
+      emptyEl.style.display = "";
+      return;
+    }
+
+    emptyEl.style.display = "none";
+
+    todaysTasks.forEach((todo) => {
+      const li = document.createElement("li");
+      li.className = "day-task-item";
+      li.dataset.todoId = todo.id;
+
+      const colorIndex =
+        typeof todo.colorIndex === "number" ? todo.colorIndex : 0;
+
+      const barColor =
+        EVENT_COLOR_PALETTE[colorIndex] || EVENT_COLOR_PALETTE[0];
+      const bgColor =
+        EVENT_COLOR_BG_PALETTE[colorIndex] || "rgba(0,0,0,0.05)";
+
+      // 🔹 배경 반투명
+      li.style.backgroundColor = bgColor;
+
+      // 왼쪽 색 막대
+      const bar = document.createElement("div");
+      bar.className = "day-task-item__colorbar";
+      bar.style.backgroundColor = barColor;
+
+      // 내용
+      const content = document.createElement("div");
+      content.className = "day-task-item__content";
+
+      const titleEl = document.createElement("div");
+      titleEl.className = "day-task-item__title";
+      titleEl.textContent = todo.text;
+
+      const metaEl = document.createElement("div");
+      metaEl.className = "day-task-item__meta";
+      metaEl.textContent = todo.dueTime
+        ? `⏰ ${todo.dueTime}`
+        : "종일";
+
+      content.appendChild(titleEl);
+      content.appendChild(metaEl);
+
+      li.appendChild(bar);
+      li.appendChild(content);
+
+      // 🔹 클릭 시 수정 바텀시트 열기
+      li.addEventListener("click", () => {
+        openBottomSheet("edit-task", {
+          taskId: todo.id,
+          date: todo.dueDate,
+          start: todo.dueTime || "",
+          title: todo.text,
+          memo: todo.memo || "",
+          colorIndex,
+        });
+      });
+
+      listEl.appendChild(li);
     });
-    updateTodoEmptyState();
+  }
+
+  function renderTodoLists() {
+    if (
+      !todoNodueListElement &&
+      !todoDeadlineListElement &&
+      !todoDoneListElement
+    ) {
+      return;
+    }
+
+    // 리스트 초기화
+    if (todoNodueListElement) todoNodueListElement.innerHTML = "";
+    if (todoDeadlineListElement) todoDeadlineListElement.innerHTML = "";
+    if (todoDoneListElement) todoDoneListElement.innerHTML = "";
+
+    // 상태별 분리
+    const pending = todos.filter((t) => !t.done);
+    const done = todos.filter((t) => t.done);
+
+    const nodue = pending.filter(
+      (t) => t.type === "nodue" || !t.type // type 없으면 기한 없는 할 일로 취급
+    );
+    const deadline = pending.filter((t) => t.type === "deadline");
+
+    // 기한 있는 할 일을 마감 순으로 정렬
+    deadline.sort(compareDeadlineTodo);
+
+    // 기한 없는 할 일 렌더
+    if (todoNodueListElement) {
+      nodue.forEach((todo) => {
+        const el = createTodoElement(todo);
+        todoNodueListElement.appendChild(el);
+      });
+    }
+
+    // 기한 있는 할 일 렌더
+    if (todoDeadlineListElement) {
+      deadline.forEach((todo) => {
+        const el = createTodoElement(todo);
+        todoDeadlineListElement.appendChild(el);
+      });
+    }
+
+    // 완료된 할 일 렌더
+    if (todoDoneListElement) {
+      done.forEach((todo) => {
+        const el = createTodoElement(todo);
+        todoDoneListElement.appendChild(el);
+      });
+    }
+
+    // 섹션별 빈 상태 메시지 업데이트
+    if (todoEmptyNodueMessage) {
+      todoEmptyNodueMessage.hidden = nodue.length > 0;
+    }
+    if (todoEmptyDeadlineMessage) {
+      todoEmptyDeadlineMessage.hidden = deadline.length > 0;
+    }
+    if (todoEmptyDoneMessage) {
+      todoEmptyDoneMessage.hidden = done.length > 0;
+    }
   }
 
   function initTodos() {
-    if (!todoListElement) return;
-    todos = loadTodosFromStorage();
-    getNextTodoId();
-    if (todos.length > 0) {
-      renderTodoList();
-    } else {
-      todoListElement.innerHTML = "";
-      updateTodoEmptyState();
+    // 리스트 하나라도 없으면 그냥 초기화 스킵
+    if (
+      !todoNodueListElement &&
+      !todoDeadlineListElement &&
+      !todoDoneListElement
+    ) {
+      return;
     }
 
+    todos = loadTodosFromStorage();
+    getNextTodoId();
+    renderTodoLists();
+
+    // 🔹 새로고침 직후에도 달력/하루 탭에 할 일이 바로 반영되도록 한 번 더 갱신
+    renderCalendar();                                  // 날짜 아래 점들 (할 일 포함)
+    renderEventListForDate(currentSelectedDate);       // 달력 탭 오른쪽 "일정/할 일" 리스트
+    if (currentTimelineDate) {
+      renderDayRightList(currentTimelineDate);         // 하루 탭 오른쪽 타임블록+할 일 리스트
+      renderTasksForDate(currentTimelineDate);         // 하루 탭 아래쪽 "오늘의 할 일" 리스트
+    }
+
+    // 하단 입력 바에서 "기한 없는 할 일" 추가 (nodue)
     if (todoInputForm && todoInput) {
       todoInputForm.addEventListener("submit", (event) => {
         event.preventDefault();
@@ -1618,18 +2327,23 @@ document.addEventListener("DOMContentLoaded", () => {
           text,
           done: false,
           source: null,
+          type: "nodue",   // 🔹 기본은 기한 없는 할 일
+          dueDate: null,
+          dueTime: null,
+          colorIndex: 0,
+          memo: "",
         };
+
         todos.push(newTodo);
         saveTodosToStorage();
+        renderTodoLists();
 
-        const el = createTodoElement(newTodo);
-        todoListElement.appendChild(el);
         todoInput.value = "";
         todoInput.focus();
-        updateTodoEmptyState();
       });
     }
 
+    // TODO: 나중에 "달력에서 불러오기"를 진짜 일정 → deadline task 로 연결할 예정
     if (importTodoFromCalendarBtn) {
       importTodoFromCalendarBtn.addEventListener("click", () => {
         const t = {
@@ -1637,12 +2351,11 @@ document.addEventListener("DOMContentLoaded", () => {
           text: "캘린더에서 가져온 일정",
           done: false,
           source: "calendar",
+          type: "nodue", // 일단은 기한 없는 할 일로 취급
         };
         todos.push(t);
         saveTodosToStorage();
-        const el = createTodoElement(t);
-        todoListElement.appendChild(el);
-        updateTodoEmptyState();
+        renderTodoLists();
       });
     }
 
@@ -1653,15 +2366,15 @@ document.addEventListener("DOMContentLoaded", () => {
           text: "타임테이블에서 가져온 블록",
           done: false,
           source: "timeline",
+          type: "nodue", // 일단은 기한 없는 할 일로 취급
         };
         todos.push(t);
         saveTodosToStorage();
-        const el = createTodoElement(t);
-        todoListElement.appendChild(el);
-        updateTodoEmptyState();
+        renderTodoLists();
       });
     }
   }
+
 
   /* ============================================================
      상단 "오늘" 버튼 – 오늘 날짜로 이동 + 선택

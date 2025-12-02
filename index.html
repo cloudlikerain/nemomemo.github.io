@@ -112,6 +112,14 @@
             >
               + 새 일정
             </button>
+
+            <button
+              class="day-detail__add-task-button"
+              type="button"
+              data-action="open-task-form"
+            >
+              + 새 할 일
+            </button>
           </header>
 
           <!-- 일정 리스트 -->
@@ -217,6 +225,26 @@
               </button>
             </div>
           </div>
+
+          <!-- 🔹 헤더 안으로 옮긴 기상/수면 시간 설정 -->
+          <div class="day-sleep-row">
+            <div class="day-sleep-field">
+              <span class="day-sleep-label">기상</span>
+              <input
+                type="time"
+                step="300"
+                class="day-sleep-input day-sleep-input--wake"
+              />
+            </div>
+            <div class="day-sleep-field">
+              <span class="day-sleep-label">수면</span>
+              <input
+                type="time"
+                step="300"
+                class="day-sleep-input day-sleep-input--sleep"
+              />
+            </div>
+          </div>
         </header>
 
         <div class="day-screen-layout">
@@ -229,8 +257,14 @@
 
           <!-- ➡ 오른쪽: 블록 목록 -->
           <div class="day-screen-right">
-            <ul class="timeblock-list">
-              <!-- JS에서 현재 날짜의 블록 목록을 채움 -->
+            <!-- 아무것도 없을 때 메시지 -->
+            <p class="day-right-empty">
+              아직 이 날짜에는 블록이나 할 일이 없어요.
+            </p>
+
+            <!-- JS에서 현재 날짜의 타임블록 + 기한 있는 할 일을 채움 -->
+            <ul class="day-right-list">
+              <!-- JS에서 채워짐 -->
             </ul>
           </div>
         </div>
@@ -296,34 +330,45 @@
 
         <!-- 투두 리스트 -->
         <section class="todo-section" aria-label="할 일 목록">
-          <ul class="todo-list">
-            <!-- JS로 아이템들이 추가될 예정 -->
-            <!-- 예시 아이템 하나 (초기 표시용) -->
-            <li class="todo-item" data-todo-id="example-1" data-done="false">
-              <label class="todo-item__main">
-                <input
-                  class="todo-item__checkbox"
-                  type="checkbox"
-                  aria-label="HCI 과제 마무리"
-                />
-                <span class="todo-item__title">
-                  HCI 과제 마무리
-                </span>
-              </label>
-              <div class="todo-item__meta">
-                <span class="todo-item__tag todo-item__tag--source">
-                  캘린더
-                </span>
-                <button
-                  class="todo-item__delete-button"
-                  type="button"
-                  aria-label="할 일 삭제"
-                >
-                  삭제
-                </button>
-              </div>
-            </li>
-          </ul>
+          <!-- 아직 못 한 할 일 -->
+          <div class="todo-section-group todo-section-group--pending">
+            <h3 class="todo-section__title">아직 못 한 할 일</h3>
+
+            <!-- 기한 없는 할 일 -->
+            <div class="todo-subsection todo-subsection--nodue">
+              <h4 class="todo-subsection__title">기한 없는 할 일</h4>
+              <p class="todo-empty-message todo-empty-message--nodue">
+                아직 등록된 기한 없는 할 일이 없어요.
+              </p>
+              <ul class="todo-list todo-list--nodue">
+                <!-- JS로 아이템들이 추가될 예정 -->
+              </ul>
+            </div>
+
+            <!-- 기한 있는 할 일 -->
+            <div class="todo-subsection todo-subsection--deadline">
+              <h4 class="todo-subsection__title">기한 있는 할 일</h4>
+              <p class="todo-empty-message todo-empty-message--deadline">
+                아직 등록된 기한 있는 할 일이 없어요.
+              </p>
+              <ul class="todo-list todo-list--deadline">
+                <!-- JS로 기한 있는 할 일들이 정렬되어 들어올 예정 -->
+              </ul>
+            </div>
+          </div>
+
+          <!-- 이미 완료한 할 일 -->
+          <div class="todo-section-group todo-section-group--done">
+            <h3 class="todo-section__title">이미 완료한 할 일</h3>
+            <p class="todo-empty-message todo-empty-message--done">
+              완료된 할 일이 없어요.
+            </p>
+            <ul class="todo-list todo-list--done">
+              <!-- JS로 완료된 할 일들이 들어올 예정 -->
+            </ul>
+          </div>
+        </section>
+
 
     </main>
 
@@ -403,6 +448,11 @@
         <input
           type="hidden"
           class="bottom-sheet__input--block-id"
+        />
+
+        <input
+          type="hidden"
+          class="bottom-sheet__input--task-id"
         />
 
         <div class="bottom-sheet__field">

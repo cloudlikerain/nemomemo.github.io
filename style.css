@@ -289,6 +289,21 @@ body {
   color: #fff;
   font-size: 12px;
   padding: 4px 10px;
+  margin-left: auto;
+}
+
+.day-detail__add-task-button {
+  border-radius: 999px;
+  border: none;
+  background-color: #10b981;   /* 연한 초록 */
+  color: #fff;
+  font-size: 12px;
+  padding: 4px 10px;
+  white-space: nowrap;
+}
+
+.day-detail__add-task-button:hover {
+  filter: brightness(0.95);
 }
 
 /* 일정 리스트 */
@@ -320,6 +335,8 @@ body {
   min-width: 72px;
   font-size: 11px;
   color: #555;
+  align-self: flex-start;
+  margin-top: 5px;
 }
 
 .event-list__time-separator {
@@ -539,6 +556,79 @@ body {
   color: #b00000;
   font-size: 11px;
   padding: 4px 8px;
+}
+
+/* =======================
+   하루 탭 - 기한 있는 할 일
+========================== */
+
+.day-task-section {
+  margin-top: 16px;
+}
+
+.day-task-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.day-task-item {
+  border-radius: 6px;
+  padding: 6px 8px;
+  margin-bottom: 8px;
+  border: 1px solid #ddd;
+  display: flex;
+  gap: 6px;
+  background-color: #fff;
+}
+
+.day-task-item__colorbar {
+  width: 4px;
+  border-radius: 4px;
+}
+
+.day-task-item__content {
+  flex: 1;
+}
+
+.day-task-item__title {
+  font-size: 13px;
+  font-weight: 600;
+  margin-bottom: 2px;
+}
+
+.day-task-item__meta {
+  font-size: 11px;
+  color: #666;
+}
+
+.day-task-empty {
+  font-size: 12px;
+  color: #777;
+  margin: 6px 0 10px;
+}
+
+.day-right-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column; /* 🔥 걍 세로로 쌓기 */
+  gap: 8px;
+}
+
+.day-right-item {
+  border-radius: 6px;
+  padding: 8px 10px;
+  border: 1px solid #ddd;
+  background-color: #fff;
+  display: flex;
+  gap: 8px;
+}
+
+.day-right-item__colorbar {
+  width: 4px;
+  border-radius: 4px;
 }
 
 /* ─────────────────────── */
@@ -968,6 +1058,15 @@ body {
   line-height: 1.4;
 }
 
+/* === 할 일(task)처럼 시간 한 칸만 쓸 때 === */
+.bottom-sheet__row--single {
+  display: block;
+}
+
+.bottom-sheet__row--single .bottom-sheet__field {
+  width: 100%;
+}
+
 .calendar-grid--month {
   touch-action: pan-y; /* 세로 스크롤은 브라우저가 처리, 가로는 우리가 JS로 처리 */
 }
@@ -1081,6 +1180,11 @@ body {
   border-radius: 2px;
 }
 
+/* 🔹 기상 이전/수면 이후 구간용 더 진한 회색 칸 */
+.timetable-cell--sleep {
+  background-color: #e4e7eb; /* 필요하면 #9ca3af 처럼 더 진하게 조정 가능 */
+}
+
 /* 색 블록도 같은 row 위에 겹치도록 */
 .timetable-block {
   grid-row: 1 / 2;
@@ -1113,7 +1217,7 @@ body {
 
 .timeblock-list {
   list-style: none;
-  margin: 0;
+  margin: 8px 0 0;  /* 🔹 위에 새 UI랑 살짝 여백 */
   padding: 0;
   border-radius: 8px;
   border: 1px solid #e5e7eb;
@@ -1150,7 +1254,8 @@ body {
 }
 
 .timeblock-list__title {
-  font-weight: 500;
+  font-size: 13px;
+  font-weight: 600;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -1158,12 +1263,37 @@ body {
 
 .timeblock-list__time {
   font-size: 11px;
+  color: #666;
+}
+
+/* =======================
+   하루 탭 - 기상/수면 설정
+========================== */
+
+.day-sleep-row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  margin-bottom: 8px;
+  font-size: 11px;
+  color: #4b5563;
+}
+
+.day-sleep-field {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.day-sleep-label {
+  font-size: 11px;
   color: #6b7280;
 }
 
-
-
-/* === 스타일 파일 제일 마지막에 추가 === */
-.timetable-block {
-  color: #111827 !important;
+.day-sleep-input {
+  font-size: 11px;
+  padding: 2px 6px;
+  border-radius: 999px;
+  border: 1px solid #d1d5db;
+  background-color: #f9fafb;
 }
