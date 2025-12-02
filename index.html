@@ -187,12 +187,23 @@
       >
         <header class="day-screen-header">
           <div class="day-screen-header__top">
-            <button
-              type="button"
-              class="btn btn-text day-screen-date-button"
-            >
-              <span class="day-screen-date-label">2025년 12월 1일</span>
-            </button>
+            <!-- 🔹 날짜 버튼 + 숨겨진 date input -->
+            <div class="day-screen-header__date">
+              <button
+                type="button"
+                class="btn btn-text day-screen-date-button"
+              >
+                <span class="day-screen-date-label">2025년 12월 1일</span>
+                <span class="day-screen-date-chevron">▼</span>
+              </button>
+
+              <!-- 실제 날짜 선택용 (UI는 숨기고 버튼으로만 조작) -->
+              <input
+                type="date"
+                class="day-screen-date-input"
+                aria-label="날짜 선택"
+              />
+            </div>
 
             <div class="day-screen-header__actions">
               <button
@@ -216,6 +227,8 @@
               >
                 초기화
               </button>
+              <!-- ⬇⬇⬇ 이 부분은 삭제 (이미지 저장 버튼 헤더에서 제거) -->
+              <!--
               <button
                 class="btn btn-text"
                 type="button"
@@ -223,6 +236,7 @@
               >
                 이미지 저장
               </button>
+              -->
             </div>
           </div>
 
@@ -253,6 +267,14 @@
             <div class="timetable" id="timetable">
               <!-- JS에서 05~04 시간 라벨 + 블록을 grid로 채움 -->
             </div>
+              <!-- 🔹 타임테이블 아래 구석: 이미지 저장 버튼 -->
+              <button
+                class="day-screen-export-btn"
+                type="button"
+                data-action="export-timetable-image"
+              >
+                타임테이블을 이미지로 저장하기
+              </button>
           </div>
 
           <!-- ➡ 오른쪽: 블록 목록 -->

@@ -93,6 +93,10 @@ body {
   color: #007aff;
 }
 
+.btn-clear-timeline {
+  color: #f11919;
+}
+
 /* 월/주 토글 */
 .view-toggle {
   display: inline-flex;
@@ -427,12 +431,6 @@ body {
   gap: 4px;
 }
 
-.day-screen-header__actions {
-  display: flex;
-  gap: 8px;
-  flex-wrap: wrap;
-}
-
 .btn-outline {
   border: 1px solid #ccc;
   background-color: #fff;
@@ -575,7 +573,6 @@ body {
 .day-task-item {
   border-radius: 6px;
   padding: 6px 8px;
-  margin-bottom: 8px;
   border: 1px solid #ddd;
   display: flex;
   gap: 6px;
@@ -1084,12 +1081,51 @@ body {
   justify-content: space-between;
   align-items: center;
   gap: 8px;
+  margin-bottom: 8px;
 }
 
 .day-screen-header__actions {
   display: flex;
   flex-wrap: wrap;
   gap: 4px;
+}
+
+/* 날짜 버튼 래퍼 */
+.day-screen-header__date {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+/* 날짜 버튼 자체 – 줄바꿈 없이 한 줄 유지 */
+.day-screen-date-button {
+  border-radius: 999px;
+  border: 1px solid #ddd;
+  background-color: #fafafa;
+  padding: 4px 8px;
+  font-size: 12px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  white-space: nowrap; /* 🔹 "2025년 12월 3일" 줄바꿈 방지 */
+}
+
+.day-screen-date-label {
+  font-size: 12px;
+}
+
+.day-screen-date-chevron {
+  font-size: 10px;
+  color: #6b7280;
+}
+
+/* 실제 date input 은 화면에서 숨기고, 버튼으로만 조작 */
+.day-screen-date-input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+  width: 0;
+  height: 0;
 }
 
 /* 하루 화면: 좌/우 1:1 레이아웃 */
@@ -1123,6 +1159,24 @@ body {
   font-weight: 600;
   margin: 0 0 6px;
 }
+
+/* 타임테이블 아래에 붙는 작은 텍스트 버튼 */
+.day-screen-export-btn {
+  align-self: flex-start;      /* 오른쪽 아래 구석 느낌 */
+  margin-top: 7px;
+  border: none;
+  background: none;
+  padding: 2px 0;
+  font-size: 11px;
+  color: #9197a1;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.day-screen-export-btn:hover {
+  color: #111827;
+}
+
 
 /* ───────────────────────── */
 /* 5분 단위 타임테이블      */
@@ -1274,7 +1328,6 @@ body {
   display: flex;
   gap: 8px;
   align-items: center;
-  margin-bottom: 8px;
   font-size: 11px;
   color: #4b5563;
 }

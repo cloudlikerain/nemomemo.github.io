@@ -1091,6 +1091,8 @@ document.addEventListener("DOMContentLoaded", () => {
   const timetableEl = document.querySelector("#timetable");
   const dayScreenDateLabel = document.querySelector(".day-screen-date-label");
   const dayScreenDateButton = document.querySelector(".day-screen-date-button");
+  const dayScreenDateInput = document.querySelector(".day-screen-date-input");
+
   const openBlockSheetBtn = document.querySelector(
     "[data-action='open-timeblock-sheet']"
   );
@@ -1475,16 +1477,26 @@ document.addEventListener("DOMContentLoaded", () => {
 
     listEl.innerHTML = "";
 
-    // 🔹1) 타임블록
-    const blocks = timeBlocks.filter((b) => b.date === dateYMD);
+    // 🔹1) 타임블록 (시작 시간 기준으로 정렬)
+    const blocks = timeBlocks
+      .filter((b) => b.date === dateYMD)
+      .sort((a, b) => a.start.localeCompare(b.start));
 
-    // 🔹2) 기한 있는 할 일
-    const tasks = todos.filter(
-      (t) =>
-        t.type === "deadline" &&
-        t.dueDate === dateYMD &&
-        !t.done
-    );
+    // 🔹2) 기한 있는 할 일 (시간 기준 정렬)
+    const tasks = todos
+      .filter(
+        (t) =>
+          t.type === "deadline" &&
+          t.dueDate === dateYMD &&
+          !t.done
+      )
+      .sort((a, b) => {
+        // dueTime 없으면 뒤로 보내기
+        if (!a.dueTime && !b.dueTime) return 0;
+        if (!a.dueTime) return 1;
+        if (!b.dueTime) return -1;
+        return a.dueTime.localeCompare(b.dueTime);
+      });
 
     // 🔹 합치기
     const combined = [
@@ -1606,11 +1618,36 @@ document.addEventListener("DOMContentLoaded", () => {
     // 🔹 초기 날짜(오늘 또는 선택된 날짜)의 인풋/타임테이블 반영
     setTimelineDate(currentSelectedDate);
 
-    if (dayScreenDateButton) {
+    // 🔹 하루 탭 상단 날짜 버튼 → 실제 date input 과 연동
+    if (dayScreenDateButton && dayScreenDateInput) {
+      // 버튼 눌렀을 때 date picker 열기
       dayScreenDateButton.addEventListener("click", () => {
-        alert("날짜 선택 UI는 나중에 추가할 예정이에요 :)");
+        // 현재 타임라인 날짜를 input 값으로 맞춰두기
+        dayScreenDateInput.value = currentTimelineDate;
+
+        try {
+          // 최신 브라우저: showPicker 지원
+          if (typeof dayScreenDateInput.showPicker === "function") {
+            dayScreenDateInput.showPicker();
+          } else {
+            // fallback: click으로 기본 UI 호출
+            dayScreenDateInput.click();
+          }
+        } catch (e) {
+          dayScreenDateInput.click();
+        }
+      });
+
+      // 날짜가 바뀌었을 때 실제 상태 갱신
+      dayScreenDateInput.addEventListener("change", () => {
+        const value = dayScreenDateInput.value;
+        if (!value) return;
+
+        // 🔹 달력 / 하루 탭 모두 이 날짜를 바라보게 공용 함수 사용
+        setSelectedDate(value); // 내부에서 setTimelineDate까지 호출
       });
     }
+
 
     if (openBlockSheetBtn) {
       openBlockSheetBtn.addEventListener("click", () => {
